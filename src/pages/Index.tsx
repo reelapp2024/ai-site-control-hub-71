@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
@@ -19,6 +20,7 @@ import { PostCategoriesManagement } from "@/components/admin/PostCategoriesManag
 import { PostSubcategoriesManagement } from "@/components/admin/PostSubcategoriesManagement";
 import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
 import { PostEditor } from "@/components/admin/PostEditor";
+import { CreditManagement } from "@/components/admin/CreditManagement";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 const Index = () => {
@@ -99,6 +101,8 @@ const Index = () => {
         return <PostSubcategoriesManagement />;
       case "post-tags":
         return <PostTagsManagement />;
+      case "credits":
+        return <CreditManagement />;
       case "ai-models":
         return <AIModelConfig />;
       case "analytics":
