@@ -147,8 +147,18 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
         form.reset();
       }
     } else {
-      // Create new credential
-      const newCredential = storeCredential(values);
+      // Create new credential - ensure all required fields are present
+      const credentialData = {
+        providerId: values.providerId,
+        providerName: values.providerName,
+        username: values.username,
+        server: values.server,
+        port: values.port,
+        password: values.password,
+        apiKey: values.apiKey,
+      };
+      
+      const newCredential = storeCredential(credentialData);
       
       toast({
         title: "Credential added",
