@@ -9,7 +9,9 @@ import {
   Settings,
   Zap,
   Menu,
-  X
+  X,
+  ListPlus,
+  ListTodo
 } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +22,15 @@ interface AdminSidebarProps {
 
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { 
+    id: "projects", 
+    label: "Projects", 
+    icon: ListTodo,
+    submenu: [
+      { id: "create-project", label: "Create Project", icon: ListPlus },
+      { id: "project-list", label: "Project List", icon: ListTodo },
+    ]
+  },
   { id: "websites", label: "Websites", icon: Globe },
   { id: "users", label: "Users", icon: Users },
   { id: "ai-models", label: "AI Models", icon: Bot },
@@ -29,6 +40,11 @@ const sidebarItems = [
 
 export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
+
+  const toggleSubmenu = (id: string) => {
+    setExpandedSubmenu(expandedSubmenu === id ? null : id);
+  };
 
   return (
     <div className={cn(
@@ -55,20 +71,72 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
       <nav className="flex-1 p-4 space-y-2">
         {sidebarItems.map((item) => {
           const Icon = item.icon;
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const isSubmenuOpen = expandedSubmenu === item.id;
+          
           return (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className={cn(
-                "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
-                activeSection === item.id
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            <div key={item.id} className="space-y-1">
+              <button
+                onClick={() => {
+                  if (hasSubmenu) {
+                    toggleSubmenu(item.id);
+                  } else {
+                    setActiveSection(item.id);
+                  }
+                }}
+                className={cn(
+                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
+                  (activeSection === item.id || (hasSubmenu && item.submenu?.some(sub => activeSection === sub.id)))
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">{item.label}</span>
+                    {hasSubmenu && (
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isSubmenuOpen ? "rotate-180" : ""}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    )}
+                  </>
+                )}
+              </button>
+
+              {/* Submenu */}
+              {!isCollapsed && hasSubmenu && isSubmenuOpen && (
+                <div className="pl-11 space-y-1">
+                  {item.submenu?.map((subItem) => {
+                    const SubIcon = subItem.icon;
+                    return (
+                      <button
+                        key={subItem.id}
+                        onClick={() => setActiveSection(subItem.id)}
+                        className={cn(
+                          "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
+                          activeSection === subItem.id
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        )}
+                      >
+                        <SubIcon className="h-4 w-4 flex-shrink-0" />
+                        <span>{subItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
-            </button>
+            </div>
           );
         })}
       </nav>

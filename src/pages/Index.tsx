@@ -7,6 +7,8 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { AIModelConfig } from "@/components/admin/AIModelConfig";
 import { Analytics } from "@/components/admin/Analytics";
 import { Settings } from "@/components/admin/Settings";
+import { CreateProject } from "@/components/admin/CreateProject";
+import { ProjectList } from "@/components/admin/ProjectList";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -15,6 +17,10 @@ const Index = () => {
     switch (activeSection) {
       case "dashboard":
         return <DashboardOverview />;
+      case "create-project":
+        return <CreateProject />;
+      case "project-list":
+        return <ProjectList />;
       case "websites":
         return <WebsiteManagement />;
       case "users":
