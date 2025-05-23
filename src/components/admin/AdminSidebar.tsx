@@ -22,7 +22,9 @@ import {
   FolderOpen,
   Tag,
   Tags,
-  Coins
+  Coins,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -161,31 +163,37 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
 
   return (
     <div className={cn(
-      "bg-gray-900 text-white transition-all duration-300 flex flex-col",
+      "bg-slate-800 text-white transition-all duration-300 flex flex-col shadow-xl",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <Zap className="h-8 w-8 text-blue-400" />
-            <span className="text-xl font-bold">AI WebGen</span>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Zap className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">SEO Admin</h1>
+              <p className="text-xs text-slate-400">Dashboard Pro</p>
+            </div>
           </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
         >
           {isCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {sidebarItems.map((item) => {
           const Icon = item.icon;
           const hasSubmenu = item.submenu && item.submenu.length > 0;
           const isSubmenuOpen = expandedSubmenu === item.id;
+          const isActive = activeSection === item.id || (hasSubmenu && item.submenu?.some(sub => activeSection === sub.id));
           
           return (
             <div key={item.id} className="space-y-1">
@@ -198,29 +206,24 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
                   }
                 }}
                 className={cn(
-                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
-                  (activeSection === item.id || (hasSubmenu && item.submenu?.some(sub => activeSection === sub.id)))
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group",
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-slate-300 hover:bg-slate-700 hover:text-white"
                 )}
               >
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 {!isCollapsed && (
                   <>
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1 font-medium">{item.label}</span>
                     {hasSubmenu && (
-                      <svg
-                        className={`w-4 h-4 transition-transform ${isSubmenuOpen ? "rotate-180" : ""}`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
+                      <div className="transition-transform duration-200">
+                        {isSubmenuOpen ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </div>
                     )}
                   </>
                 )}
@@ -228,7 +231,7 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
 
               {/* Submenu */}
               {!isCollapsed && hasSubmenu && isSubmenuOpen && (
-                <div className="pl-11 space-y-1">
+                <div className="pl-4 space-y-1 border-l border-slate-700 ml-6">
                   {item.submenu?.map((subItem) => {
                     const SubIcon = subItem.icon;
                     return (
@@ -236,14 +239,14 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
                         key={subItem.id}
                         onClick={() => setActiveSection(subItem.id)}
                         className={cn(
-                          "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
+                          "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 text-left",
                           activeSection === subItem.id
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                            ? "bg-blue-500 text-white"
+                            : "text-slate-400 hover:bg-slate-700 hover:text-white"
                         )}
                       >
                         <SubIcon className="h-4 w-4 flex-shrink-0" />
-                        <span>{subItem.label}</span>
+                        <span className="text-sm font-medium">{subItem.label}</span>
                       </button>
                     );
                   })}
@@ -255,15 +258,15 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-slate-700">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-xs font-semibold">A</span>
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+            <span className="text-xs font-bold text-white">A</span>
           </div>
           {!isCollapsed && (
-            <div>
-              <p className="text-sm font-medium">Admin User</p>
-              <p className="text-xs text-gray-400">admin@aiwebgen.com</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">Admin User</p>
+              <p className="text-xs text-slate-400">admin@seowebgen.com</p>
             </div>
           )}
         </div>

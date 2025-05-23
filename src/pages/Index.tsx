@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
@@ -115,15 +114,40 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-gray-950 dark:via-purple-950 dark:to-gray-900 flex font-poppins">
+    <div className="min-h-screen bg-slate-50 flex font-poppins">
       <AdminSidebar 
         activeSection={activeSection} 
         setActiveSection={handleSectionChange} 
       />
       <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">
-          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-800/20 min-h-[calc(100vh-4rem)]">
-            <div className="p-8">
+        <div className="p-6 max-w-full">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900 mb-1">
+                    SEO Admin Dashboard
+                  </h1>
+                  <p className="text-slate-600">
+                    Manage your SEO optimized websites and content
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                    Online
+                  </div>
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-sm">A</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[calc(100vh-10rem)]">
+            <div className="p-6">
               {renderActiveSection()}
             </div>
           </div>
