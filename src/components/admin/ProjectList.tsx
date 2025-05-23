@@ -2,9 +2,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, ExternalLink, Pencil, Search, Server, Trash, Filter } from "lucide-react";
+import { Eye, ExternalLink, Pencil, Search, Server, Trash, Filter, MoreHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Pagination,
   PaginationContent,
@@ -206,7 +212,7 @@ export function ProjectList() {
                   <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="font-medium">Created At</TableHead>
                   <TableHead className="font-medium">Image Count</TableHead>
-                  <TableHead className="font-medium text-right">Actions</TableHead>
+                  <TableHead className="font-medium text-right w-[60px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -246,22 +252,36 @@ export function ProjectList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end space-x-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Preview">
-                          <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Live Site">
-                          <ExternalLink className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Services">
-                          <Server className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Update Project">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete">
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Live Site
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Server className="mr-2 h-4 w-4" />
+                              Services
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+                              Update Project
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              <Trash className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
