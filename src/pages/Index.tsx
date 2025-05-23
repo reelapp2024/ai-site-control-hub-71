@@ -16,6 +16,9 @@ import { DomainManagement } from "@/components/admin/DomainManagement";
 import { WebsiteGeneratorPlugin } from "@/components/admin/WebsiteGeneratorPlugin";
 import { PagesManagement } from "@/components/admin/PagesManagement";
 import { PostsManagement } from "@/components/admin/PostsManagement";
+import { PostCategoriesManagement } from "@/components/admin/PostCategoriesManagement";
+import { PostSubcategoriesManagement } from "@/components/admin/PostSubcategoriesManagement";
+import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -46,6 +49,12 @@ const Index = () => {
         return <PagesManagement />;
       case "posts":
         return <PostsManagement />;
+      case "post-categories":
+        return <PostCategoriesManagement />;
+      case "post-subcategories":
+        return <PostSubcategoriesManagement />;
+      case "post-tags":
+        return <PostTagsManagement />;
       case "ai-models":
         return <AIModelConfig />;
       case "analytics":
