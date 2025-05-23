@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Check, Copy, Globe, FileText, Code, RefreshCw, Info, AlertCircle, Trash, Server } from "lucide-react";
+import { Check, Copy, Globe, FileText, Code, RefreshCw, Info, AlertCircle, Trash, Server, Upload, HardDrive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,6 +14,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CredentialManager } from "./CredentialManager";
+import { HostingCredential, ConnectionProtocol } from "@/utils/credentialManager";
+import { uploadVerificationFile } from "@/utils/hostingService";
+import { Separator } from "@/components/ui/separator";
 
 const domainSchema = z.object({
   domain: z.string().min(3, {
@@ -30,6 +34,7 @@ type Domain = {
   verificationMethod?: "dns" | "file" | "meta";
   createdAt: Date;
   hostingProvider?: string;
+  hostingCredentialId?: string;
   dnsRecords?: DNSRecord[];
   verificationStatus?: {
     lastChecked: Date;
@@ -107,6 +112,10 @@ export function DomainManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState<Domain | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCredentialManager, setShowCredentialManager] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<HostingCredential | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [fileUploadInProgress, setFileUploadInProgress] = useState(false);
   
   const hostingProviders: HostingProvider[] = [
     { id: "cloudflare", name: "Cloudflare", logo: "cloudflare.svg", dnsInstructions: "Log in to Cloudflare > Select your site > DNS > Add record" },
@@ -193,6 +202,8 @@ export function DomainManagement() {
     setVerificationTab(domain.verificationMethod || "dns");
     // Set hosting provider if exists
     setSelectedProvider(domain.hostingProvider);
+    // Reset credential
+    setSelectedCredential(null);
   };
   
   const handleDeleteDomain = (domain: Domain) => {
@@ -319,6 +330,77 @@ export function DomainManagement() {
   const filteredDomains = domains.filter(domain => 
     domain.domain.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Handle credential selection
+  const handleCredentialSelected = (credential: HostingCredential) => {
+    setSelectedCredential(credential);
+    
+    if (activeDomain) {
+      // Save credential ID to domain
+      setDomains(domains.map(d => 
+        d.id === activeDomain.id ? { 
+          ...d, 
+          hostingCredentialId: credential.id
+        } : d
+      ));
+      
+      toast({
+        title: "Credentials connected",
+        description: `${credential.providerName} credentials have been linked to ${activeDomain.domain}.`,
+      });
+    }
+    
+    // Close credential manager
+    setShowCredentialManager(false);
+  };
+  
+  // Handle file upload for verification
+  const handleFileUpload = async () => {
+    if (!activeDomain || !selectedCredential) return;
+    
+    setFileUploadInProgress(true);
+    
+    const success = await uploadVerificationFile(
+      selectedCredential,
+      activeDomain.domain,
+      activeDomain.id,
+      selectedCredential.providerId as ConnectionProtocol
+    );
+    
+    if (success) {
+      // After successful upload, trigger verification check
+      refreshVerification(activeDomain);
+    }
+    
+    setFileUploadInProgress(false);
+  };
+  
+  // Deploy website
+  const handleDeploy = () => {
+    if (!activeDomain || !selectedCredential) return;
+    
+    setIsDeploying(true);
+    
+    toast({
+      title: "Deploying website",
+      description: `Deploying your website to ${activeDomain.domain}...`,
+    });
+    
+    // Simulate deployment process
+    setTimeout(() => {
+      setIsDeploying(false);
+      
+      toast({
+        title: "Website deployed",
+        description: `Your website has been successfully deployed to ${activeDomain.domain}.`,
+      });
+      
+      // Activate domain if not already active
+      if (activeDomain.status !== "active") {
+        activateDomain(activeDomain);
+      }
+    }, 3000);
+  };
 
   return (
     <div className="space-y-6">
@@ -367,6 +449,16 @@ export function DomainManagement() {
                     <div className="flex items-center mt-1">
                       <Server className="h-4 w-4 mr-1 text-gray-500" />
                       <span>{hostingProviders.find(p => p.id === activeDomain.hostingProvider)?.name}</span>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedCredential && (
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Connected Credential</div>
+                    <div className="flex items-center mt-1 text-sm">
+                      <HardDrive className="h-4 w-4 mr-1 text-gray-500" />
+                      <span>{selectedCredential.providerName} - {selectedCredential.username}</span>
                     </div>
                   </div>
                 )}
@@ -538,6 +630,53 @@ export function DomainManagement() {
                           <li>Click verify below</li>
                         </ol>
                       </div>
+                      
+                      {/* Automated File Upload Option */}
+                      <div className="mt-4 p-4 border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-900/30 rounded-md">
+                        <h4 className="text-sm font-medium mb-2">Automatic File Upload</h4>
+                        <p className="text-sm mb-4">
+                          You can automatically upload the verification file using your hosting credentials.
+                        </p>
+                        
+                        {selectedCredential ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-sm p-2 bg-white dark:bg-gray-800 rounded border">
+                              <Server className="h-4 w-4 text-gray-500" />
+                              <span>Using {selectedCredential.providerName} ({selectedCredential.username})</span>
+                            </div>
+                            <Button
+                              onClick={handleFileUpload}
+                              disabled={fileUploadInProgress}
+                              className="w-full"
+                            >
+                              {fileUploadInProgress ? (
+                                <>
+                                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  Upload Verification File
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Connect your hosting credentials to enable automatic file upload.
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setShowCredentialManager(true)}
+                              className="w-full"
+                            >
+                              Connect Hosting Credentials
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </TabsContent>
                   
@@ -598,35 +737,90 @@ export function DomainManagement() {
                       Your domain has been verified using {activeDomain.verificationMethod} verification.
                     </AlertDescription>
                   </Alert>
-                  
-                  {!activeDomain.hostingProvider && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Connect to Hosting Provider</h3>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Select Provider</label>
-                        <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a hosting provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {hostingProviders.map(provider => (
-                              <SelectItem key={provider.id} value={provider.id}>
-                                {provider.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Button 
-                          className="w-full mt-2" 
-                          disabled={!selectedProvider}
-                          onClick={connectToProvider}
+
+                  {/* Hosting Integration Section */}
+                  <Separator className="my-6" />
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Hosting Integration</h3>
+                    
+                    {!selectedCredential ? (
+                      <div className="space-y-4">
+                        <p className="text-sm">
+                          Connect your hosting credentials to enable automatic website deployment
+                          and file management for this domain.
+                        </p>
+                        <Button
+                          onClick={() => setShowCredentialManager(true)}
+                          className="w-full"
                         >
-                          Connect Provider
+                          Connect Hosting Credentials
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Server className="h-5 w-5 text-blue-500" />
+                              <div>
+                                <div className="font-medium">{selectedCredential.providerName}</div>
+                                <div className="text-sm text-gray-500">
+                                  {selectedCredential.username} • {selectedCredential.server}:{selectedCredential.port}
+                                </div>
+                              </div>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Deployment Options</h4>
+                          <Card>
+                            <CardContent className="space-y-4 pt-6">
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium">Deploy to Root Directory</div>
+                                <p className="text-sm text-gray-500">
+                                  Deploy your website files to the root directory of your domain.
+                                </p>
+                              </div>
+                              <Button
+                                onClick={handleDeploy}
+                                disabled={isDeploying}
+                                className="w-full"
+                              >
+                                {isDeploying ? (
+                                  <>
+                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                    Deploying...
+                                  </>
+                                ) : (
+                                  <>Deploy Website</>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                          
+                          <Card>
+                            <CardContent className="space-y-4 pt-6">
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium">Change Credentials</div>
+                                <p className="text-sm text-gray-500">
+                                  Switch to a different hosting provider or credential set.
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowCredentialManager(true)}
+                                className="w-full"
+                              >
+                                Manage Credentials
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">DNS Configuration</h3>
@@ -722,6 +916,11 @@ export function DomainManagement() {
             </CardContent>
           </Card>
         </div>
+      ) : showCredentialManager ? (
+        <CredentialManager 
+          onCredentialSelected={handleCredentialSelected}
+          selectedDomain={activeDomain?.domain}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {/* Domain List */}
@@ -843,6 +1042,29 @@ export function DomainManagement() {
                 </Form>
               </div>
             </CardFooter>
+          </Card>
+
+          {/* Hosting Credentials Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Hosting Credentials</CardTitle>
+              <CardDescription>
+                Manage your hosting provider credentials for domain verification and website deployment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-6">
+              <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <Server className="h-6 w-6 text-gray-500" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">Manage Hosting Credentials</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                Add and manage your hosting credentials for FTP/SFTP access, 
+                cPanel, Plesk, or DirectAdmin integration.
+              </p>
+              <Button className="mt-4" onClick={() => setShowCredentialManager(true)}>
+                Manage Credentials
+              </Button>
+            </CardContent>
           </Card>
 
           {/* Instructions Card */}

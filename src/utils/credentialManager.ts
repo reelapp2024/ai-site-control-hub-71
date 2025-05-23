@@ -1,0 +1,159 @@
+
+import { toast } from "@/hooks/use-toast";
+
+// Types for credential storage
+export type HostingCredential = {
+  id: string;
+  providerId: string;
+  providerName: string;
+  username: string;
+  password?: string; // Only stored temporarily, not persisted in state
+  apiKey?: string;
+  server?: string;
+  port?: number;
+  createdAt: Date;
+  lastTested?: Date;
+  isValid?: boolean;
+};
+
+export type ConnectionProtocol = 'ftp' | 'sftp' | 'api' | 'cpanel' | 'plesk' | 'directadmin';
+
+// Encryption utility (mock) - in a real app, use a proper encryption library
+const encryptData = (data: string): string => {
+  // This is a placeholder - in production, use a real encryption library
+  return `encrypted:${data}`;
+};
+
+const decryptData = (encryptedData: string): string => {
+  // This is a placeholder - in production, use a real decryption library
+  if (encryptedData.startsWith('encrypted:')) {
+    return encryptedData.substring(10);
+  }
+  return encryptedData;
+};
+
+// Securely store credentials (mock implementation)
+export const storeCredential = (credential: Omit<HostingCredential, 'id' | 'createdAt'>): HostingCredential => {
+  // In a real app, this would securely store credentials in a backend
+  const newCredential: HostingCredential = {
+    id: Math.random().toString(36).substr(2, 9),
+    ...credential,
+    createdAt: new Date(),
+    // In a real app, encrypt sensitive data like password and apiKey
+    password: credential.password ? encryptData(credential.password) : undefined,
+    apiKey: credential.apiKey ? encryptData(credential.apiKey) : undefined,
+  };
+  
+  // In a real app, these would be stored in a secure database, not localStorage
+  const storedCredentials = getCredentials();
+  storedCredentials.push(newCredential);
+  
+  // For demo, we'll use localStorage, but in production never store credentials in localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('hostedCredentials', JSON.stringify(storedCredentials));
+  }
+  
+  return newCredential;
+};
+
+// Retrieve credentials
+export const getCredentials = (): HostingCredential[] => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('hostedCredentials');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  }
+  return [];
+};
+
+// Get credential by ID
+export const getCredentialById = (id: string): HostingCredential | undefined => {
+  return getCredentials().find(cred => cred.id === id);
+};
+
+// Update credential
+export const updateCredential = (id: string, updates: Partial<HostingCredential>): HostingCredential | undefined => {
+  const credentials = getCredentials();
+  const index = credentials.findIndex(cred => cred.id === id);
+  
+  if (index >= 0) {
+    // Encrypt sensitive data if provided
+    if (updates.password) {
+      updates.password = encryptData(updates.password);
+    }
+    if (updates.apiKey) {
+      updates.apiKey = encryptData(updates.apiKey);
+    }
+    
+    credentials[index] = { ...credentials[index], ...updates };
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hostedCredentials', JSON.stringify(credentials));
+    }
+    
+    return credentials[index];
+  }
+  
+  return undefined;
+};
+
+// Delete credential
+export const deleteCredential = (id: string): boolean => {
+  const credentials = getCredentials();
+  const filtered = credentials.filter(cred => cred.id !== id);
+  
+  if (filtered.length < credentials.length) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hostedCredentials', JSON.stringify(filtered));
+    }
+    return true;
+  }
+  
+  return false;
+};
+
+// Test credential connection
+export const testConnection = async (credential: HostingCredential): Promise<boolean> => {
+  // This is a simulated connection test
+  // In a real app, this would make an actual connection to the hosting provider
+  
+  try {
+    // Simulate API/connection delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // For demo purposes, 90% of tests succeed
+    const isSuccessful = Math.random() > 0.1;
+    
+    if (isSuccessful) {
+      updateCredential(credential.id, { 
+        lastTested: new Date(),
+        isValid: true
+      });
+      toast({
+        title: "Connection successful",
+        description: `Successfully connected to ${credential.providerName}`,
+      });
+      return true;
+    } else {
+      updateCredential(credential.id, { 
+        lastTested: new Date(),
+        isValid: false
+      });
+      toast({
+        title: "Connection failed",
+        description: `Failed to connect to ${credential.providerName}. Please check your credentials.`,
+        variant: "destructive"
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("Connection test error:", error);
+    toast({
+      title: "Connection error",
+      description: `An error occurred while testing the connection: ${error}`,
+      variant: "destructive"
+    });
+    return false;
+  }
+};
