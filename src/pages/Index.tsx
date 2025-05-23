@@ -13,6 +13,7 @@ import { SubAdminManagement } from "@/components/admin/SubAdminManagement";
 import { ThemesManagement } from "@/components/admin/ThemesManagement";
 import { PluginManagement } from "@/components/admin/PluginManagement";
 import { DomainManagement } from "@/components/admin/DomainManagement";
+import { WebsiteGeneratorPlugin } from "@/components/admin/WebsiteGeneratorPlugin";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -37,6 +38,14 @@ const Index = () => {
         return <ThemesManagement />;
       case "plugins":
         return <PluginManagement />;
+      case "website-generator":
+        return <WebsiteGeneratorPlugin />;
+      case "pages":
+        // In a real app, this would be a PagesManagement component
+        return <div className="p-6 bg-white rounded-lg shadow"><h1 className="text-2xl font-bold">Pages Management</h1></div>;
+      case "posts":
+        // In a real app, this would be a PostsManagement component
+        return <div className="p-6 bg-white rounded-lg shadow"><h1 className="text-2xl font-bold">Posts Management</h1></div>;
       case "ai-models":
         return <AIModelConfig />;
       case "analytics":

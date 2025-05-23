@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -15,16 +14,19 @@ import {
   UserCog,
   Palette,
   Plug,
-  Link
+  Link,
+  FileText,
+  Layout,
+  Newspaper
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AdminSidebarProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
 }
 
-const sidebarItems = [
+const getBaseSidebarItems = () => [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { 
     id: "projects", 
@@ -60,9 +62,83 @@ const sidebarItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
+const getWebsiteGeneratorItems = () => [
+  { id: "pages", label: "Pages", icon: Layout },
+  { id: "posts", label: "Posts", icon: Newspaper },
+  { id: "website-generator", label: "Website Generator", icon: FileText },
+];
+
 export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
+  const [sidebarItems, setSidebarItems] = useState(getBaseSidebarItems());
+  
+  // Check if the website generator plugin is active
+  useEffect(() => {
+    const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
+    
+    if (isPluginActive) {
+      // Insert website generator items after websites
+      const baseItems = getBaseSidebarItems();
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
+      
+      // Only inject if not already present
+      if (websiteIndex !== -1) {
+        const newItems = [...baseItems];
+        const generatorItems = getWebsiteGeneratorItems();
+        // Insert after websites
+        newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+        setSidebarItems(newItems);
+      }
+    } else {
+      // Reset to base items
+      setSidebarItems(getBaseSidebarItems());
+    }
+  }, []);
+
+  // Listen for storage events from other components
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "website-generator-plugin-active") {
+        const isPluginActive = e.newValue === "true";
+        
+        if (isPluginActive) {
+          // Add plugin items
+          const baseItems = getBaseSidebarItems();
+          const websiteIndex = baseItems.findIndex(item => item.id === "websites");
+          
+          if (websiteIndex !== -1) {
+            const newItems = [...baseItems];
+            const generatorItems = getWebsiteGeneratorItems();
+            newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+            setSidebarItems(newItems);
+          }
+        } else {
+          // Remove plugin items
+          setSidebarItems(getBaseSidebarItems());
+        }
+      }
+    };
+
+    // Also check for changes when component mounts
+    const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
+    if (isPluginActive) {
+      const baseItems = getBaseSidebarItems();
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
+      
+      if (websiteIndex !== -1) {
+        const newItems = [...baseItems];
+        const generatorItems = getWebsiteGeneratorItems();
+        newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+        setSidebarItems(newItems);
+      }
+    }
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   const toggleSubmenu = (id: string) => {
     setExpandedSubmenu(expandedSubmenu === id ? null : id);
