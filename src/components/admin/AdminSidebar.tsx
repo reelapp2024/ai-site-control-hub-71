@@ -14,7 +14,8 @@ import {
   ListTodo,
   UserCog,
   Palette,
-  Plug
+  Plug,
+  Link
 } from "lucide-react";
 import { useState } from "react";
 
@@ -35,6 +36,14 @@ const sidebarItems = [
     ]
   },
   { id: "websites", label: "Websites", icon: Globe },
+  { 
+    id: "domains", 
+    label: "Domains", 
+    icon: Link,
+    submenu: [
+      { id: "domain-management", label: "Domain Management", icon: Link },
+    ]
+  },
   { id: "users", label: "Users", icon: Users },
   { 
     id: "subadmin", 

@@ -12,6 +12,7 @@ import { ProjectList } from "@/components/admin/ProjectList";
 import { SubAdminManagement } from "@/components/admin/SubAdminManagement";
 import { ThemesManagement } from "@/components/admin/ThemesManagement";
 import { PluginManagement } from "@/components/admin/PluginManagement";
+import { DomainManagement } from "@/components/admin/DomainManagement";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -26,6 +27,8 @@ const Index = () => {
         return <ProjectList />;
       case "websites":
         return <WebsiteManagement />;
+      case "domain-management":
+        return <DomainManagement />;
       case "users":
         return <UserManagement />;
       case "manage-subadmin":
