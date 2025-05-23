@@ -115,14 +115,18 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-gray-950 dark:via-purple-950 dark:to-gray-900 flex font-poppins">
       <AdminSidebar 
         activeSection={activeSection} 
         setActiveSection={handleSectionChange} 
       />
       <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          {renderActiveSection()}
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-800/20 min-h-[calc(100vh-4rem)]">
+            <div className="p-8">
+              {renderActiveSection()}
+            </div>
+          </div>
         </div>
       </main>
     </div>
