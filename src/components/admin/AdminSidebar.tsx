@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -20,7 +21,8 @@ import {
   Newspaper,
   FolderOpen,
   Tag,
-  Tags
+  Tags,
+  Coins
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -60,6 +62,7 @@ const getBaseSidebarItems = () => [
   },
   { id: "themes", label: "Themes", icon: Palette },
   { id: "plugins", label: "Plugins", icon: Plug },
+  { id: "credits", label: "Credits", icon: Coins },
   { id: "ai-models", label: "AI Models", icon: Bot },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
