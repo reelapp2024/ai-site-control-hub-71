@@ -12,7 +12,8 @@ import {
   X,
   ListPlus,
   ListTodo,
-  UserCog
+  UserCog,
+  Palette
 } from "lucide-react";
 import { useState } from "react";
 
@@ -42,6 +43,7 @@ const sidebarItems = [
       { id: "manage-subadmin", label: "Manage Sub Admin", icon: UserCog },
     ]
   },
+  { id: "themes", label: "Themes", icon: Palette },
   { id: "ai-models", label: "AI Models", icon: Bot },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
