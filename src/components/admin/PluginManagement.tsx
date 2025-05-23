@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Settings, Download, Trash2, ExternalLink, Upload } from "lucide-react";
+import { Search, Plus, Settings, Download, Trash2, ExternalLink, Upload, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 export function PluginManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +19,7 @@ export function PluginManagement() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [installMethod, setInstallMethod] = useState<"url" | "upload">("url");
 
-  // Mock data for plugins
+  // Mock data for plugins - modified to include the Website Generator plugin
   const installedPlugins = [
     { 
       id: "seo-plugin", 
@@ -56,6 +56,15 @@ export function PluginManagement() {
       status: "inactive", 
       author: "SafeData Ltd.",
       lastUpdated: "2023-07-03",
+    },
+    { 
+      id: "website-generator-plugin", 
+      name: "Website Generator", 
+      description: "Generate websites quickly using AI and templates. Adds Pages, Posts, and Website Generator items to your sidebar.",
+      version: "1.0.0", 
+      status: localStorage.getItem("website-generator-plugin-active") === "true" ? "active" : "inactive", 
+      author: "AI WebGen Team",
+      lastUpdated: "2023-05-23",
     },
   ];
 
@@ -125,7 +134,31 @@ export function PluginManagement() {
 
   const handleTogglePluginStatus = (pluginId: string) => {
     console.log("Toggling plugin status:", pluginId);
-    // In a real app, this would toggle the plugin active/inactive status
+    // Special handling for the Website Generator plugin
+    if (pluginId === "website-generator-plugin") {
+      const isCurrentlyActive = localStorage.getItem("website-generator-plugin-active") === "true";
+      const newStatus = !isCurrentlyActive;
+      
+      localStorage.setItem("website-generator-plugin-active", newStatus ? "true" : "false");
+      
+      // Dispatch a storage event to notify other components
+      const event = new StorageEvent("storage", {
+        key: "website-generator-plugin-active",
+        newValue: newStatus ? "true" : "false",
+      });
+      window.dispatchEvent(event);
+      
+      // Show toast notification
+      if (newStatus) {
+        toast.success("Website Generator Plugin activated");
+      } else {
+        toast.info("Website Generator Plugin deactivated");
+      }
+
+      // Update the UI immediately
+      installedPlugins.find(plugin => plugin.id === pluginId)!.status = newStatus ? "active" : "inactive";
+    }
+    // In a real app, this would toggle other plugins' active/inactive status
   };
 
   const handleDeletePlugin = (pluginId: string) => {
