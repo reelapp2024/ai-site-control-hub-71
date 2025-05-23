@@ -19,8 +19,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Index />} />
-          <Route path="/post-editor" element={<PostEditor />} />
-          <Route path="/post-editor/:postId" element={<PostEditor />} />
+          <Route path="/post-editor" element={<Index />} />
+          <Route path="/post-editor/:postId" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

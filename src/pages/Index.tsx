@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
@@ -19,21 +18,34 @@ import { PostsManagement } from "@/components/admin/PostsManagement";
 import { PostCategoriesManagement } from "@/components/admin/PostCategoriesManagement";
 import { PostSubcategoriesManagement } from "@/components/admin/PostSubcategoriesManagement";
 import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
-import { useNavigate, useLocation } from "react-router-dom";
+import { PostEditor } from "@/components/admin/PostEditor";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [currentPostId, setCurrentPostId] = useState<string | undefined>(undefined);
 
   // Set active section based on URL path when component mounts or URL changes
   useEffect(() => {
     if (location.pathname === "/") {
       setActiveSection("dashboard");
+      setIsEditingPost(false);
     } else if (location.pathname === "/posts") {
       setActiveSection("posts");
+      setIsEditingPost(false);
     } else if (location.pathname.includes("post-editor")) {
       setActiveSection("posts");
+      setIsEditingPost(true);
+      const postId = location.pathname.split('/').pop();
+      if (postId && postId !== "post-editor") {
+        setCurrentPostId(postId);
+      } else {
+        setCurrentPostId(undefined);
+      }
     }
   }, [location.pathname]);
 
@@ -42,12 +54,20 @@ const Index = () => {
     if (section === "posts") {
       navigate("/posts");
       setActiveSection("posts");
+      setIsEditingPost(false);
     } else {
       setActiveSection(section);
+      setIsEditingPost(false);
     }
   };
 
   const renderActiveSection = () => {
+    // If we're in post editor mode, return the post editor
+    if (isEditingPost) {
+      return <PostEditor postId={currentPostId} />;
+    }
+    
+    // Otherwise render the normal sections
     switch (activeSection) {
       case "dashboard":
         return <DashboardOverview />;
