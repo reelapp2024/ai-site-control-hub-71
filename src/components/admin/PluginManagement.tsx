@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +19,7 @@ export function PluginManagement() {
   const [newPluginUrl, setNewPluginUrl] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [installMethod, setInstallMethod] = useState<"url" | "upload">("url");
-
-  // Mock data for plugins - modified to include the Website Generator plugin
-  const installedPlugins = [
+  const [installedPlugins, setInstalledPlugins] = useState([
     { 
       id: "seo-plugin", 
       name: "SEO Optimization", 
@@ -66,8 +65,21 @@ export function PluginManagement() {
       author: "AI WebGen Team",
       lastUpdated: "2023-05-23",
     },
-  ];
+  ]);
 
+  // Check plugin status on component mount
+  useEffect(() => {
+    const websiteGeneratorStatus = localStorage.getItem("website-generator-plugin-active") === "true" ? "active" : "inactive";
+    setInstalledPlugins(prev => 
+      prev.map(plugin => 
+        plugin.id === "website-generator-plugin" 
+          ? { ...plugin, status: websiteGeneratorStatus } 
+          : plugin
+      )
+    );
+  }, []);
+
+  // Mock data for marketplace plugins
   const marketplacePlugins = [
     { 
       id: "social-media", 
@@ -136,27 +148,31 @@ export function PluginManagement() {
     console.log("Toggling plugin status:", pluginId);
     // Special handling for the Website Generator plugin
     if (pluginId === "website-generator-plugin") {
-      const isCurrentlyActive = localStorage.getItem("website-generator-plugin-active") === "true";
-      const newStatus = !isCurrentlyActive;
-      
-      localStorage.setItem("website-generator-plugin-active", newStatus ? "true" : "false");
-      
-      // Dispatch a storage event to notify other components
-      const event = new StorageEvent("storage", {
-        key: "website-generator-plugin-active",
-        newValue: newStatus ? "true" : "false",
+      const updatedPlugins = installedPlugins.map(plugin => {
+        if (plugin.id === pluginId) {
+          const newStatus = plugin.status === "active" ? "inactive" : "active";
+          // Update localStorage
+          localStorage.setItem("website-generator-plugin-active", newStatus === "active" ? "true" : "false");
+          
+          // Dispatch a storage event to notify other components
+          window.dispatchEvent(new StorageEvent("storage", {
+            key: "website-generator-plugin-active",
+            newValue: newStatus === "active" ? "true" : "false",
+          }));
+          
+          // Show toast notification
+          if (newStatus === "active") {
+            toast.success("Website Generator Plugin activated");
+          } else {
+            toast.info("Website Generator Plugin deactivated");
+          }
+          
+          return { ...plugin, status: newStatus };
+        }
+        return plugin;
       });
-      window.dispatchEvent(event);
       
-      // Show toast notification
-      if (newStatus) {
-        toast.success("Website Generator Plugin activated");
-      } else {
-        toast.info("Website Generator Plugin deactivated");
-      }
-
-      // Update the UI immediately
-      installedPlugins.find(plugin => plugin.id === pluginId)!.status = newStatus ? "active" : "inactive";
+      setInstalledPlugins(updatedPlugins);
     }
     // In a real app, this would toggle other plugins' active/inactive status
   };
