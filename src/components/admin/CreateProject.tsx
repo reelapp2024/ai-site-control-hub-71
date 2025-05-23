@@ -1,3 +1,4 @@
+
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -54,6 +55,18 @@ export function CreateProject() {
   
   // Sample data - in a real app, these would come from an API
   const sampleCountries = ["United States", "Canada", "United Kingdom", "Australia", "Germany", "France"];
+
+  // Step labels for the progress indicator
+  const stepLabels = [
+    "Project Info",
+    "Countries",
+    "States",
+    "Cities",
+    "Local Areas",
+    "Preview",
+    "Services",
+    "About Us"
+  ];
 
   // Redirect countdown effect
   useEffect(() => {
@@ -901,10 +914,10 @@ export function CreateProject() {
               {Array.from({length: 8}, (_, i) => i + 1).map(i => (
                 <div 
                   key={i} 
-                  className={`flex items-center ${i > 1 && "ml-2"}`}
+                  className={`flex flex-col items-center ${i > 1 && "ml-2"}`}
                 >
                   <div 
-                    className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
+                    className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium mb-1
                       ${step === i 
                         ? "bg-blue-600 text-white"
                         : step > i 
@@ -913,9 +926,10 @@ export function CreateProject() {
                   >
                     {step > i ? <Check className="h-4 w-4" /> : i}
                   </div>
+                  <span className="text-xs font-medium text-gray-600 whitespace-nowrap">{stepLabels[i-1]}</span>
                   {i < 8 && (
                     <div 
-                      className={`h-1 w-6 ${step > i ? "bg-green-500" : "bg-gray-200"}`}
+                      className={`h-1 w-6 mt-4 ${step > i ? "bg-green-500" : "bg-gray-200"}`}
                     ></div>
                   )}
                 </div>
