@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -13,7 +12,8 @@ import {
   ListPlus,
   ListTodo,
   UserCog,
-  Palette
+  Palette,
+  Plugin
 } from "lucide-react";
 import { useState } from "react";
 
@@ -44,6 +44,7 @@ const sidebarItems = [
     ]
   },
   { id: "themes", label: "Themes", icon: Palette },
+  { id: "plugins", label: "Plugins", icon: Plugin },
   { id: "ai-models", label: "AI Models", icon: Bot },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
