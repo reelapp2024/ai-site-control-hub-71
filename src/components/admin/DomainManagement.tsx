@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Check, Copy, Globe, FileText, Code, RefreshCw, Info, AlertCircle } from "lucide-react";
+import { Check, Copy, Globe, FileText, Code, RefreshCw, Info, AlertCircle, Trash, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const domainSchema = z.object({
   domain: z.string().min(3, {
@@ -24,20 +26,95 @@ const domainSchema = z.object({
 type Domain = {
   id: string;
   domain: string;
-  status: "unverified" | "verified" | "active";
+  status: "unverified" | "verified" | "active" | "failed";
   verificationMethod?: "dns" | "file" | "meta";
   createdAt: Date;
+  hostingProvider?: string;
+  dnsRecords?: DNSRecord[];
+  verificationStatus?: {
+    lastChecked: Date;
+    attempts: number;
+    message?: string;
+  };
+};
+
+type DNSRecord = {
+  type: "A" | "CNAME" | "TXT" | "MX" | "NS";
+  name: string;
+  value: string;
+  ttl?: number;
+  priority?: number;
+};
+
+type HostingProvider = {
+  id: string;
+  name: string;
+  logo: string;
+  dnsInstructions: string;
 };
 
 export function DomainManagement() {
   const [domains, setDomains] = useState<Domain[]>([
-    { id: "1", domain: "example.com", status: "verified", verificationMethod: "dns", createdAt: new Date() },
-    { id: "2", domain: "mywebsite.org", status: "unverified", verificationMethod: "file", createdAt: new Date() },
+    { 
+      id: "1", 
+      domain: "example.com", 
+      status: "verified", 
+      verificationMethod: "dns", 
+      createdAt: new Date(),
+      hostingProvider: "cloudflare"
+    },
+    { 
+      id: "2", 
+      domain: "mywebsite.org", 
+      status: "unverified", 
+      verificationMethod: "file", 
+      createdAt: new Date(),
+      verificationStatus: {
+        lastChecked: new Date(),
+        attempts: 2,
+        message: "Verification file not found"
+      }
+    },
+    {
+      id: "3",
+      domain: "business-site.com",
+      status: "active",
+      verificationMethod: "meta",
+      createdAt: new Date(Date.now() - 86400000 * 5), // 5 days ago
+      hostingProvider: "aws",
+      dnsRecords: [
+        { type: "A", name: "@", value: "123.456.789.0" },
+        { type: "CNAME", name: "www", value: "business-site.com" }
+      ]
+    },
+    {
+      id: "4",
+      domain: "faileddomain.net",
+      status: "failed",
+      createdAt: new Date(Date.now() - 86400000 * 2), // 2 days ago
+      verificationStatus: {
+        lastChecked: new Date(),
+        attempts: 5,
+        message: "DNS verification failed after multiple attempts"
+      }
+    }
   ]);
   
   const [activeDomain, setActiveDomain] = useState<Domain | null>(null);
   const [verificationTab, setVerificationTab] = useState<"dns" | "file" | "meta">("dns");
   const [verificationInProgress, setVerificationInProgress] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string | undefined>(undefined);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [domainToDelete, setDomainToDelete] = useState<Domain | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const hostingProviders: HostingProvider[] = [
+    { id: "cloudflare", name: "Cloudflare", logo: "cloudflare.svg", dnsInstructions: "Log in to Cloudflare > Select your site > DNS > Add record" },
+    { id: "aws", name: "Amazon Route 53", logo: "aws.svg", dnsInstructions: "Log in to AWS Console > Route 53 > Hosted zones > Select domain > Create record" },
+    { id: "godaddy", name: "GoDaddy", logo: "godaddy.svg", dnsInstructions: "Log in to GoDaddy > My Products > Select Domain > DNS > Add record" },
+    { id: "namecheap", name: "Namecheap", logo: "namecheap.svg", dnsInstructions: "Log in to Namecheap > Domain List > Select domain > Advanced DNS > Add record" },
+    { id: "digitalocean", name: "DigitalOcean", logo: "digitalocean.svg", dnsInstructions: "Log in to DigitalOcean > Networking > Domains > Select domain > Add record" }
+  ];
   
   const form = useForm<z.infer<typeof domainSchema>>({
     resolver: zodResolver(domainSchema),
@@ -47,12 +124,26 @@ export function DomainManagement() {
   });
 
   const onSubmit = (values: z.infer<typeof domainSchema>) => {
+    // Check if domain already exists
+    if (domains.some(d => d.domain === values.domain)) {
+      toast({
+        title: "Domain already exists",
+        description: "This domain has already been added to your account.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // In a real app, you'd add the domain to your database or service
     const newDomain: Domain = {
       id: Math.random().toString(36).substr(2, 9),
       domain: values.domain,
       status: "unverified",
-      createdAt: new Date()
+      createdAt: new Date(),
+      verificationStatus: {
+        lastChecked: new Date(),
+        attempts: 0
+      }
     };
 
     setDomains([...domains, newDomain]);
@@ -77,7 +168,16 @@ export function DomainManagement() {
     // Simulate verification process
     setTimeout(() => {
       setDomains(domains.map(d => 
-        d.id === domain.id ? { ...d, status: "verified", verificationMethod: verificationTab } : d
+        d.id === domain.id ? { 
+          ...d, 
+          status: "verified", 
+          verificationMethod: verificationTab,
+          verificationStatus: {
+            lastChecked: new Date(),
+            attempts: (d.verificationStatus?.attempts || 0) + 1,
+            message: "Domain verified successfully"
+          }
+        } : d
       ));
       setVerificationInProgress(false);
       toast({
@@ -89,8 +189,115 @@ export function DomainManagement() {
 
   const handleSelectDomain = (domain: Domain) => {
     setActiveDomain(domain);
-    // Set default verification method
+    // Set default verification method or use existing
     setVerificationTab(domain.verificationMethod || "dns");
+    // Set hosting provider if exists
+    setSelectedProvider(domain.hostingProvider);
+  };
+  
+  const handleDeleteDomain = (domain: Domain) => {
+    setDomainToDelete(domain);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDeleteDomain = () => {
+    if (domainToDelete) {
+      setDomains(domains.filter(d => d.id !== domainToDelete.id));
+      toast({
+        title: "Domain deleted",
+        description: `${domainToDelete.domain} has been removed from your account.`,
+      });
+      
+      // If the deleted domain was the active one, reset state
+      if (activeDomain?.id === domainToDelete.id) {
+        setActiveDomain(null);
+      }
+      
+      setShowDeleteDialog(false);
+      setDomainToDelete(null);
+    }
+  };
+  
+  const connectToProvider = () => {
+    if (!selectedProvider || !activeDomain) return;
+    
+    // Simulate connection to hosting provider
+    toast({
+      title: "Connecting to provider",
+      description: `Connecting ${activeDomain.domain} to ${hostingProviders.find(p => p.id === selectedProvider)?.name}...`,
+    });
+    
+    // Update domain with hosting provider
+    setTimeout(() => {
+      setDomains(domains.map(d => 
+        d.id === activeDomain.id ? { 
+          ...d, 
+          hostingProvider: selectedProvider,
+          dnsRecords: [
+            { type: "A", name: "@", value: "123.456.789.0" },
+            { type: "CNAME", name: "www", value: activeDomain.domain }
+          ]
+        } : d
+      ));
+      
+      toast({
+        title: "Provider connected",
+        description: `${activeDomain.domain} has been connected to ${hostingProviders.find(p => p.id === selectedProvider)?.name}.`,
+      });
+    }, 1500);
+  };
+  
+  const activateDomain = (domain: Domain) => {
+    // Simulate activation process
+    toast({
+      title: "Activating domain",
+      description: `Setting up ${domain.domain} for your website...`,
+    });
+    
+    setTimeout(() => {
+      setDomains(domains.map(d => 
+        d.id === domain.id ? { ...d, status: "active" } : d
+      ));
+      
+      toast({
+        title: "Domain activated",
+        description: `${domain.domain} is now live and active!`,
+      });
+    }, 2000);
+  };
+  
+  const refreshVerification = (domain: Domain) => {
+    toast({
+      title: "Checking verification",
+      description: `Verifying ${domain.domain}...`,
+    });
+    
+    setTimeout(() => {
+      // 80% chance of success for demo purposes
+      const success = Math.random() > 0.2;
+      
+      setDomains(domains.map(d => 
+        d.id === domain.id ? { 
+          ...d, 
+          status: success ? "verified" : "failed",
+          verificationStatus: {
+            lastChecked: new Date(),
+            attempts: (d.verificationStatus?.attempts || 0) + 1,
+            message: success ? 
+              "Domain verified successfully" : 
+              "Verification failed. Please check your settings and try again."
+          }
+        } : d
+      ));
+      
+      toast({
+        title: success ? "Verification successful" : "Verification failed",
+        description: success ? 
+          `${domain.domain} has been verified!` : 
+          `Could not verify ${domain.domain}. Please check verification settings.`,
+        variant: success ? "default" : "destructive",
+      });
+    }, 1500);
   };
 
   const getStatusColor = (status: string) => {
@@ -101,10 +308,17 @@ export function DomainManagement() {
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       case "active":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "failed":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
     }
   };
+  
+  // Filter domains by search query
+  const filteredDomains = domains.filter(domain => 
+    domain.domain.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -137,6 +351,26 @@ export function DomainManagement() {
                   </Badge>
                 </div>
                 
+                {activeDomain.verificationStatus && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Checked</div>
+                    <div className="text-sm">{activeDomain.verificationStatus.lastChecked.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {activeDomain.verificationStatus.attempts} verification {activeDomain.verificationStatus.attempts === 1 ? 'attempt' : 'attempts'}
+                    </div>
+                  </div>
+                )}
+                
+                {activeDomain.hostingProvider && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Hosting Provider</div>
+                    <div className="flex items-center mt-1">
+                      <Server className="h-4 w-4 mr-1 text-gray-500" />
+                      <span>{hostingProviders.find(p => p.id === activeDomain.hostingProvider)?.name}</span>
+                    </div>
+                  </div>
+                )}
+                
                 {activeDomain.status === "verified" && (
                   <Alert className="bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-300">
                     <Check className="h-4 w-4" />
@@ -156,6 +390,44 @@ export function DomainManagement() {
                     </AlertDescription>
                   </Alert>
                 )}
+                
+                {activeDomain.status === "failed" && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Verification Failed</AlertTitle>
+                    <AlertDescription>
+                      {activeDomain.verificationStatus?.message || "Domain verification failed. Please try again."}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex flex-col gap-2 pt-2">
+                  {activeDomain.status === "verified" && (
+                    <Button onClick={() => activateDomain(activeDomain)} className="w-full">
+                      Activate Domain
+                    </Button>
+                  )}
+                  
+                  {(activeDomain.status === "unverified" || activeDomain.status === "failed") && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => refreshVerification(activeDomain)}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Check Verification
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteDomain(activeDomain)}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Remove Domain
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -165,11 +437,13 @@ export function DomainManagement() {
             <CardHeader>
               <CardTitle>Domain Verification</CardTitle>
               <CardDescription>
-                Choose a verification method to verify your domain ownership
+                {activeDomain.status === "unverified" || activeDomain.status === "failed" 
+                  ? "Choose a verification method to verify your domain ownership" 
+                  : "Your domain has been verified successfully"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activeDomain.status === "unverified" ? (
+              {(activeDomain.status === "unverified" || activeDomain.status === "failed") ? (
                 <Tabs value={verificationTab} onValueChange={(v) => setVerificationTab(v as "dns" | "file" | "meta")}>
                   <TabsList className="grid grid-cols-3 mb-6">
                     <TabsTrigger value="dns" className="flex items-center gap-1">
@@ -325,22 +599,112 @@ export function DomainManagement() {
                     </AlertDescription>
                   </Alert>
                   
+                  {!activeDomain.hostingProvider && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Connect to Hosting Provider</h3>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Select Provider</label>
+                        <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a hosting provider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {hostingProviders.map(provider => (
+                              <SelectItem key={provider.id} value={provider.id}>
+                                {provider.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Button 
+                          className="w-full mt-2" 
+                          disabled={!selectedProvider}
+                          onClick={connectToProvider}
+                        >
+                          Connect Provider
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Next Steps</h3>
+                    <h3 className="text-lg font-medium">DNS Configuration</h3>
                     <Card>
                       <CardContent className="pt-6">
+                        {activeDomain.hostingProvider && (
+                          <div className="mb-4">
+                            <Alert>
+                              <Server className="h-4 w-4" />
+                              <AlertTitle>Provider Connected</AlertTitle>
+                              <AlertDescription>
+                                Using {hostingProviders.find(p => p.id === activeDomain.hostingProvider)?.name} as your hosting provider.
+                              </AlertDescription>
+                            </Alert>
+                          </div>
+                        )}
+                      
                         <ol className="list-decimal list-inside space-y-4">
                           <li className="flex items-start">
                             <span className="mt-1">Configure your domain's DNS settings:</span>
-                            <div className="ml-4 mt-2">
-                              <div className="grid grid-cols-3 gap-4 text-sm">
-                                <div className="font-medium">Type</div>
-                                <div className="font-medium">Name</div>
-                                <div className="font-medium">Value</div>
-                                <div>A</div>
-                                <div>@</div>
-                                <div>123.456.789.0</div>
+                            <div className="ml-4 mt-2 w-full">
+                              <div className="grid grid-cols-3 gap-4 text-sm font-medium mb-2">
+                                <div>Type</div>
+                                <div>Name</div>
+                                <div>Value</div>
                               </div>
+                              {activeDomain.dnsRecords ? (
+                                activeDomain.dnsRecords.map((record, idx) => (
+                                  <div key={idx} className="grid grid-cols-3 gap-4 text-sm py-2 border-t border-gray-100 dark:border-gray-800">
+                                    <div>{record.type}</div>
+                                    <div>{record.name}</div>
+                                    <div className="flex items-center">
+                                      {record.value}
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="ml-2 h-6 w-6 p-0"
+                                        onClick={() => copyToClipboard(record.value, `${record.type} record value`)}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-3 gap-4 text-sm py-2 border-t border-gray-100 dark:border-gray-800">
+                                    <div>A</div>
+                                    <div>@</div>
+                                    <div className="flex items-center">
+                                      123.456.789.0
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="ml-2 h-6 w-6 p-0"
+                                        onClick={() => copyToClipboard("123.456.789.0", "A record value")}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-4 text-sm py-2 border-t border-gray-100 dark:border-gray-800">
+                                    <div>CNAME</div>
+                                    <div>www</div>
+                                    <div className="flex items-center">
+                                      {activeDomain.domain}
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="ml-2 h-6 w-6 p-0"
+                                        onClick={() => copyToClipboard(activeDomain.domain, "CNAME record value")}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </li>
                           <li>
@@ -369,7 +733,16 @@ export function DomainManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {domains.length > 0 ? (
+              <div className="mb-4">
+                <Input
+                  placeholder="Search domains..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              
+              {filteredDomains.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -381,10 +754,16 @@ export function DomainManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {domains.map((domain) => (
+                      {filteredDomains.map((domain) => (
                         <tr key={domain.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                           <td className="py-3 px-4">
                             <div className="font-medium text-gray-900 dark:text-white">{domain.domain}</div>
+                            {domain.hostingProvider && (
+                              <div className="text-xs text-gray-500 flex items-center mt-1">
+                                <Server className="h-3 w-3 mr-1" />
+                                {hostingProviders.find(p => p.id === domain.hostingProvider)?.name}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <Badge className={getStatusColor(domain.status)}>
@@ -395,18 +774,38 @@ export function DomainManagement() {
                             {domain.createdAt.toLocaleDateString()}
                           </td>
                           <td className="py-3 px-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleSelectDomain(domain)}
-                            >
-                              Manage
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleSelectDomain(domain)}
+                              >
+                                Manage
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => handleDeleteDomain(domain)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+              ) : searchQuery ? (
+                <div className="text-center py-6">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Globe className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No matching domains</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    No domains found matching "{searchQuery}"
+                  </p>
                 </div>
               ) : (
                 <div className="text-center py-6">
@@ -470,6 +869,7 @@ export function DomainManagement() {
                   <ol className="list-decimal list-inside space-y-2">
                     <li>Add your domain in the form above</li>
                     <li>Verify domain ownership using one of the provided methods</li>
+                    <li>Connect to your hosting provider</li>
                     <li>Configure DNS settings as instructed</li>
                     <li>Wait for DNS propagation (may take up to 24 hours)</li>
                     <li>Your website will be accessible at your domain</li>
@@ -480,6 +880,42 @@ export function DomainManagement() {
           </Card>
         </div>
       )}
+      
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Domain</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this domain? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {domainToDelete && (
+            <div className="py-4">
+              <div className="flex items-center space-x-2 p-2 border rounded">
+                <Globe className="h-5 w-5 text-gray-500" />
+                <span className="font-medium">{domainToDelete.domain}</span>
+                <Badge className={getStatusColor(domainToDelete.status)}>
+                  {domainToDelete.status}
+                </Badge>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteDomain}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
