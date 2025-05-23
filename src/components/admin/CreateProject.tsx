@@ -1,5 +1,4 @@
-
-import { useState, KeyboardEvent, useRef } from "react";
+import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,13 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Check, ChevronRight, ChevronLeft, ClipboardList, Bot } from "lucide-react";
+import { X, Check, ChevronRight, ChevronLeft, ClipboardList, Bot, Upload, Mail, Phone, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function CreateProject() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -36,10 +38,35 @@ export function CreateProject() {
   const [localAreas, setLocalAreas] = useState<{[city: string]: string[]}>({});
   const [localAreaInput, setLocalAreaInput] = useState<{[city: string]: string}>({});
   
+  // Service states
   const [showServicesDialog, setShowServicesDialog] = useState(false);
+  const [serviceOption, setServiceOption] = useState<"manual" | "ai" | "">("");
+  const [serviceNames, setServiceNames] = useState("");
+  
+  // About Us states
+  const [aboutUsEmail, setAboutUsEmail] = useState("");
+  const [aboutUsPhone, setAboutUsPhone] = useState("");
+  const [aboutUsLocation, setAboutUsLocation] = useState("");
+  
+  // Final success state
+  const [showFinalSuccess, setShowFinalSuccess] = useState(false);
+  const [redirectCounter, setRedirectCounter] = useState(7);
   
   // Sample data - in a real app, these would come from an API
   const sampleCountries = ["United States", "Canada", "United Kingdom", "Australia", "Germany", "France"];
+
+  // Redirect countdown effect
+  useEffect(() => {
+    if (showFinalSuccess && redirectCounter > 0) {
+      const timer = setTimeout(() => {
+        setRedirectCounter(redirectCounter - 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else if (showFinalSuccess && redirectCounter === 0) {
+      navigate("/");
+    }
+  }, [showFinalSuccess, redirectCounter, navigate]);
 
   const handleNextStep = () => {
     if (step === 1) {
@@ -55,6 +82,29 @@ export function CreateProject() {
       setStep(step + 1);
     } else if (step === 6) {
       setShowServicesDialog(true);
+    } else if (step === 7) {
+      // Service entry step
+      if (serviceOption === "manual" && !serviceNames.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter at least one service name",
+          variant: "destructive"
+        });
+        return;
+      }
+      setStep(step + 1);
+    } else if (step === 8) {
+      // About Us step
+      if (!aboutUsEmail || !aboutUsPhone || !aboutUsLocation) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+      // Show final success
+      setShowFinalSuccess(true);
     }
   };
 
@@ -255,12 +305,23 @@ export function CreateProject() {
     }, 1500);
   };
 
-  const handleServiceOptionSelect = (option: string) => {
+  const handleServiceOptionSelect = (option: "manual" | "ai") => {
     setShowServicesDialog(false);
-    // Here you would handle the service selection
-    // For now, we'll just reset to step 1
-    setStep(1);
-    resetForm();
+    setServiceOption(option);
+    setStep(7); // Move to service entry step
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (file) {
+      // In a real app, you would process the file here
+      // For demo purposes, we'll just show a success message
+      toast({
+        title: "File Uploaded",
+        description: `${file.name} was successfully uploaded`,
+      });
+    }
   };
 
   const resetForm = () => {
@@ -699,6 +760,115 @@ export function CreateProject() {
             </div>
           </div>
         );
+      case 7:
+        // Manual service entry
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">
+              {serviceOption === "manual" ? "Manual Service Entry" : "AI Service Generation"}
+            </h3>
+            
+            {serviceOption === "manual" ? (
+              <>
+                <div className="space-y-4">
+                  <Label htmlFor="serviceNames">Enter service names or upload Excel</Label>
+                  <div className="text-xs text-gray-500 mb-2">One service name per line</div>
+                  <Textarea
+                    id="serviceNames"
+                    placeholder="Enter one service per line"
+                    className="min-h-[150px]"
+                    value={serviceNames}
+                    onChange={(e) => setServiceNames(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fileUpload" className="block">Choose file</Label>
+                  <div className="flex items-center">
+                    <Input
+                      id="fileUpload"
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleFileUpload}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center p-10 border-2 border-dashed rounded-lg">
+                <Bot className="h-12 w-12 mx-auto text-blue-500 mb-4" />
+                <h3 className="text-lg font-medium mb-2">AI Service Generation</h3>
+                <p className="text-gray-500 mb-4">
+                  Our AI will analyze your project details and suggest appropriate services.
+                </p>
+                <div className="flex justify-center">
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      toast({
+                        title: "AI Services Generated",
+                        description: "10 services have been generated based on your project",
+                      });
+                      setStep(8);
+                    }}
+                  >
+                    Generate Services
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 8:
+        // About us details
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">Enter About Us Details</h3>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <Label htmlFor="aboutUsEmail">Email</Label>
+                </div>
+                <Input
+                  id="aboutUsEmail"
+                  type="email"
+                  placeholder="Enter email"
+                  value={aboutUsEmail}
+                  onChange={(e) => setAboutUsEmail(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <Label htmlFor="aboutUsPhone">Phone</Label>
+                </div>
+                <Input
+                  id="aboutUsPhone"
+                  placeholder="Enter phone"
+                  value={aboutUsPhone}
+                  onChange={(e) => setAboutUsPhone(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-gray-500" />
+                  <Label htmlFor="aboutUsLocation">Main Location</Label>
+                </div>
+                <Input
+                  id="aboutUsLocation"
+                  placeholder="Enter main location"
+                  value={aboutUsLocation}
+                  onChange={(e) => setAboutUsLocation(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -712,6 +882,8 @@ export function CreateProject() {
       case 4: return "City Selection";
       case 5: return "Local Area Selection";
       case 6: return "Preview";
+      case 7: return serviceOption === "manual" ? "Manual Service Entry" : "AI Service Generation";
+      case 8: return "About Us Details";
       default: return "Project Creation";
     }
   };
@@ -722,123 +894,163 @@ export function CreateProject() {
         <h1 className="text-2xl font-bold tracking-tight">Create New Project</h1>
       </div>
       
-      <div className="flex justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          {Array.from({length: 6}, (_, i) => i + 1).map(i => (
-            <div 
-              key={i} 
-              className={`flex items-center ${i > 1 && "ml-2"}`}
-            >
-              <div 
-                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
-                  ${step === i 
-                    ? "bg-blue-600 text-white"
-                    : step > i 
-                      ? "bg-green-500 text-white" 
-                      : "bg-gray-200 text-gray-500"}`}
-              >
-                {step > i ? <Check className="h-4 w-4" /> : i}
-              </div>
-              {i < 6 && (
+      {!showFinalSuccess ? (
+        <>
+          <div className="flex justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              {Array.from({length: 8}, (_, i) => i + 1).map(i => (
                 <div 
-                  className={`h-1 w-6 ${step > i ? "bg-green-500" : "bg-gray-200"}`}
-                ></div>
-              )}
+                  key={i} 
+                  className={`flex items-center ${i > 1 && "ml-2"}`}
+                >
+                  <div 
+                    className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
+                      ${step === i 
+                        ? "bg-blue-600 text-white"
+                        : step > i 
+                          ? "bg-green-500 text-white" 
+                          : "bg-gray-200 text-gray-500"}`}
+                  >
+                    {step > i ? <Check className="h-4 w-4" /> : i}
+                  </div>
+                  {i < 8 && (
+                    <div 
+                      className={`h-1 w-6 ${step > i ? "bg-green-500" : "bg-gray-200"}`}
+                    ></div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {showSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
-            <div className="bg-green-100 p-2 rounded-full">
-              <Check className="h-6 w-6 text-green-600" />
+          {showSuccess && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
+                <div className="bg-green-100 p-2 rounded-full">
+                  <Check className="h-6 w-6 text-green-600" />
+                </div>
+                <p className="text-lg font-medium">Project Created Successfully</p>
+              </div>
             </div>
-            <p className="text-lg font-medium">Project Created Successfully</p>
-          </div>
-        </div>
-      )}
-      
-      <Dialog open={showServicesDialog} onOpenChange={setShowServicesDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>How do you want to add services?</DialogTitle>
-            <DialogDescription>
-              Choose an option to add services to your project
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <Button 
-              variant="outline" 
-              className="flex flex-col h-auto p-6 space-y-2"
-              onClick={() => handleServiceOptionSelect("manual")}
-            >
-              <ClipboardList className="h-10 w-10 text-gray-500" />
-              <span className="text-lg font-medium">Manual Entry</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex flex-col h-auto p-6 space-y-2"
-              onClick={() => handleServiceOptionSelect("ai")}
-            >
-              <Bot className="h-10 w-10 text-blue-500" />
-              <span className="text-lg font-medium">AI Services</span>
-            </Button>
-          </div>
-          <div className="flex justify-center">
-            <Button 
-              variant="ghost"
-              onClick={() => setShowServicesDialog(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>{getStepTitle()}</CardTitle>
-          <CardDescription>
-            {step === 1 && "Enter the basic details for your new project."}
-            {step === 2 && "Select the countries where your service will be available."}
-            {step === 3 && "Select states or regions for your selected countries."}
-            {step === 4 && "Select cities for your selected states."}
-            {step === 5 && "Add local areas for your selected cities."}
-            {step === 6 && "Review your project details before finalizing."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {renderStep()}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleBackStep}
-            disabled={step === 1}
-          >
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+          )}
           
-          <Button
-            type="button"
-            onClick={step === 1 ? handleCompletedFirstStep : handleNextStep}
-            disabled={(step === 1 && (!projectName || !serviceType))}
-          >
-            {step < 6 ? (
-              <>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </>
-            ) : (
-              "Complete Project"
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+          <Dialog open={showServicesDialog} onOpenChange={setShowServicesDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>How do you want to add services?</DialogTitle>
+                <DialogDescription>
+                  Choose an option to add services to your project
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <Button 
+                  variant="outline" 
+                  className="flex flex-col h-auto p-6 space-y-2"
+                  onClick={() => handleServiceOptionSelect("manual")}
+                >
+                  <ClipboardList className="h-10 w-10 text-gray-500" />
+                  <span className="text-lg font-medium">Manual Entry</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex flex-col h-auto p-6 space-y-2"
+                  onClick={() => handleServiceOptionSelect("ai")}
+                >
+                  <Bot className="h-10 w-10 text-blue-500" />
+                  <span className="text-lg font-medium">AI Services</span>
+                </Button>
+              </div>
+              <div className="flex justify-center">
+                <Button 
+                  variant="ghost"
+                  onClick={() => setShowServicesDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>{getStepTitle()}</CardTitle>
+              <CardDescription>
+                {step === 1 && "Enter the basic details for your new project."}
+                {step === 2 && "Select the countries where your service will be available."}
+                {step === 3 && "Select states or regions for your selected countries."}
+                {step === 4 && "Select cities for your selected states."}
+                {step === 5 && "Add local areas for your selected cities."}
+                {step === 6 && "Review your project details before finalizing."}
+                {step === 7 && serviceOption === "manual" && "Enter service names manually or upload a spreadsheet."}
+                {step === 7 && serviceOption === "ai" && "Let our AI generate service suggestions for you."}
+                {step === 8 && "Enter contact and location information for your business."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderStep()}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBackStep}
+                disabled={step === 1}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              
+              <Button
+                type="button"
+                onClick={step === 1 ? handleCompletedFirstStep : handleNextStep}
+                disabled={(step === 1 && (!projectName || !serviceType))}
+              >
+                {step < 8 ? (
+                  <>
+                    Next
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </>
+                ) : (
+                  "Add Details"
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </>
+      ) : (
+        <Card className="border-green-500">
+          <CardHeader className="bg-green-50 border-b border-green-100">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-100 p-2 rounded-full">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-green-700">Success</CardTitle>
+                <CardDescription className="text-green-600">
+                  Your About Us information has been saved!
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-6">
+              <p className="text-lg">
+                Your project has been successfully created and is ready to use.
+              </p>
+              
+              <div className="text-sm text-gray-500">
+                Redirecting in <span className="font-bold">{redirectCounter}</span> seconds…
+              </div>
+              
+              <div>
+                <Button onClick={() => navigate("/")}>
+                  Go to project listing page
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
