@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, ExternalLink, Pencil, Search, Server, Trash, Filter, MoreHorizontal, Plus, Zap } from "lucide-react";
@@ -28,6 +27,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Sample countries and states for dropdowns
+const countries = [
+  { value: "us", label: "United States" },
+  { value: "ca", label: "Canada" },
+  { value: "uk", label: "United Kingdom" },
+  { value: "au", label: "Australia" },
+  { value: "de", label: "Germany" },
+  { value: "fr", label: "France" },
+  { value: "in", label: "India" },
+  { value: "jp", label: "Japan" },
+  { value: "br", label: "Brazil" },
+  { value: "mx", label: "Mexico" },
+];
+
+const statesByCountry = {
+  us: [
+    { value: "ny", label: "New York" },
+    { value: "ca", label: "California" },
+    { value: "tx", label: "Texas" },
+    { value: "fl", label: "Florida" },
+    { value: "il", label: "Illinois" },
+  ],
+  ca: [
+    { value: "on", label: "Ontario" },
+    { value: "qc", label: "Quebec" },
+    { value: "bc", label: "British Columbia" },
+    { value: "ab", label: "Alberta" },
+    { value: "ns", label: "Nova Scotia" },
+  ],
+  uk: [
+    { value: "eng", label: "England" },
+    { value: "sct", label: "Scotland" },
+    { value: "wls", label: "Wales" },
+    { value: "nir", label: "Northern Ireland" },
+  ],
+  // Add states for other countries as needed
+};
 
 // Sample data for demonstration
 const projectsData = [
@@ -126,7 +173,16 @@ const projectsData = [
 export function ProjectList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [stateOpen, setStateOpen] = useState(false);
   const itemsPerPage = 5;
+
+  // Reset state when country changes
+  useEffect(() => {
+    setSelectedState("");
+  }, [selectedCountry]);
 
   // Filter projects based on search term
   const filteredProjects = projectsData.filter(project =>
@@ -201,6 +257,116 @@ export function ProjectList() {
           <Button className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
             New Project
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter Section with Dropdowns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Country
+          </label>
+          <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={countryOpen}
+                className="w-full justify-between bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700"
+              >
+                {selectedCountry
+                  ? countries.find((country) => country.value === selectedCountry)?.label
+                  : "Select country..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0 bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700">
+              <Command className="bg-white dark:bg-gray-800">
+                <CommandInput placeholder="Search country..." />
+                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandGroup className="max-h-[200px] overflow-y-auto">
+                  {countries.map((country) => (
+                    <CommandItem
+                      key={country.value}
+                      value={country.value}
+                      onSelect={(currentValue) => {
+                        setSelectedCountry(currentValue === selectedCountry ? "" : currentValue);
+                        setCountryOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedCountry === country.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {country.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            State/Province
+          </label>
+          <Popover open={stateOpen} onOpenChange={setStateOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={stateOpen}
+                className="w-full justify-between bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700"
+                disabled={!selectedCountry}
+              >
+                {selectedState && selectedCountry
+                  ? statesByCountry[selectedCountry as keyof typeof statesByCountry]?.find(
+                      (state) => state.value === selectedState
+                    )?.label
+                  : "Select state..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0 bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-700">
+              <Command className="bg-white dark:bg-gray-800">
+                <CommandInput placeholder="Search state..." />
+                <CommandEmpty>No state found.</CommandEmpty>
+                <CommandGroup className="max-h-[200px] overflow-y-auto">
+                  {selectedCountry &&
+                    statesByCountry[selectedCountry as keyof typeof statesByCountry]?.map((state) => (
+                      <CommandItem
+                        key={state.value}
+                        value={state.value}
+                        onSelect={(currentValue) => {
+                          setSelectedState(currentValue === selectedState ? "" : currentValue);
+                          setStateOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedState === state.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {state.label}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Button variant="default" className="mt-6 bg-purple-600 hover:bg-purple-700 text-white">
+            Apply Filters
+          </Button>
+          <Button variant="ghost" className="mt-6 ml-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50">
+            Reset
           </Button>
         </div>
       </div>
