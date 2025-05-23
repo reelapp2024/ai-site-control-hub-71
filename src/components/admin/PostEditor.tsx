@@ -16,10 +16,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Sparkles, Image, Calendar as CalendarIcon, Link, Bold, Italic, Underline, Code, ListOrdered, List, FileText } from "lucide-react";
 
-export function PostEditor() {
+interface PostEditorProps {
+  postId?: string;
+}
+
+export function PostEditor({ postId }: PostEditorProps) {
   const navigate = useNavigate();
-  const { postId } = useParams();
-  const isEditMode = !!postId;
+  const params = useParams();
+  // Use either the prop or the param, with the prop taking precedence
+  const currentPostId = postId || params.postId;
+  const isEditMode = !!currentPostId;
   const editorRef = useRef<HTMLDivElement>(null);
   
   const [editorTab, setEditorTab] = useState("write");
