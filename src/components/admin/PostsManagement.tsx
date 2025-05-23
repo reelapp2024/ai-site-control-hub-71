@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,7 @@ export function PostsManagement() {
     }
   ]);
 
-  // Mock data for categories and subcategories
+  // Mock data for categories
   const [categories, setCategories] = useState([
     { id: "1", name: "Tutorial", slug: "tutorial", count: 1 },
     { id: "2", name: "Guide", slug: "guide", count: 1 },
@@ -291,7 +290,11 @@ export function PostsManagement() {
                       <TableCell>{post.comments}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/post/${post.id}`)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button 
