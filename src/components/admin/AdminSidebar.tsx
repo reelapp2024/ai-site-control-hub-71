@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   ListPlus,
-  ListTodo
+  ListTodo,
+  UserCog
 } from "lucide-react";
 import { useState } from "react";
 
@@ -33,6 +34,14 @@ const sidebarItems = [
   },
   { id: "websites", label: "Websites", icon: Globe },
   { id: "users", label: "Users", icon: Users },
+  { 
+    id: "subadmin", 
+    label: "Sub Admin", 
+    icon: UserCog,
+    submenu: [
+      { id: "manage-subadmin", label: "Manage Sub Admin", icon: UserCog },
+    ]
+  },
   { id: "ai-models", label: "AI Models", icon: Bot },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },

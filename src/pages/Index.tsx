@@ -9,6 +9,7 @@ import { Analytics } from "@/components/admin/Analytics";
 import { Settings } from "@/components/admin/Settings";
 import { CreateProject } from "@/components/admin/CreateProject";
 import { ProjectList } from "@/components/admin/ProjectList";
+import { SubAdminManagement } from "@/components/admin/SubAdminManagement";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -25,6 +26,8 @@ const Index = () => {
         return <WebsiteManagement />;
       case "users":
         return <UserManagement />;
+      case "manage-subadmin":
+        return <SubAdminManagement />;
       case "ai-models":
         return <AIModelConfig />;
       case "analytics":
