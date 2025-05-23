@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -204,7 +205,7 @@ export function PostsManagement() {
             </DialogContent>
           </Dialog>
           
-          <Button onClick={() => navigate('/post-editor')}>
+          <Button onClick={() => navigate('/post-editor', { state: { from: '/posts' } })}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Post
           </Button>
@@ -300,7 +301,7 @@ export function PostsManagement() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => navigate(`/post-editor/${post.id}`)}
+                            onClick={() => navigate(`/post-editor/${post.id}`, { state: { from: '/posts' } })}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>

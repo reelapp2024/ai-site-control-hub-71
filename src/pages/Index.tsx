@@ -30,6 +30,8 @@ const Index = () => {
   useEffect(() => {
     if (location.pathname === "/") {
       setActiveSection("dashboard");
+    } else if (location.pathname === "/posts") {
+      setActiveSection("posts");
     } else if (location.pathname.includes("post-editor")) {
       setActiveSection("posts");
     }
@@ -38,7 +40,7 @@ const Index = () => {
   const handleSectionChange = (section: string) => {
     // Handle navigation for sections that have dedicated pages
     if (section === "posts") {
-      navigate("/");
+      navigate("/posts");
       setActiveSection("posts");
     } else {
       setActiveSection(section);
