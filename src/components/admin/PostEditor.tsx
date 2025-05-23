@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Image as ImageIcon } from "lucide-react";
 import { useEditorState } from "@/hooks/use-editor-state";
 import EditorToolbar from "./EditorToolbar";
 
@@ -738,7 +738,7 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                       onChange={(e) => setOgImage(e.target.value)}
                     />
                     <Button variant="outline" size="icon">
-                      <Image className="h-4 w-4" />
+                      <ImageIcon className="h-4 w-4" />
                     </Button>
                   </div>
                   {ogImage && (
@@ -879,7 +879,7 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                       onChange={(e) => setPostFeaturedImage(e.target.value)}
                     />
                     <Button variant="outline" size="icon">
-                      <Image className="h-4 w-4" />
+                      <ImageIcon className="h-4 w-4" />
                     </Button>
                   </div>
                   {postFeaturedImage && (
