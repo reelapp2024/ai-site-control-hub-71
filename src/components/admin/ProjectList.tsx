@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,118 +152,118 @@ export function ProjectList() {
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case "Active":
-        return { variant: "default", className: "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white border-0" };
+        return { variant: "default", className: "bg-green-600 hover:bg-green-700 text-white" };
       case "Inactive":
-        return { variant: "secondary", className: "bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 text-white border-0" };
+        return { variant: "secondary", className: "bg-gray-500 hover:bg-gray-600 text-white" };
       case "Draft":
-        return { variant: "outline", className: "bg-gradient-to-r from-amber-100 to-yellow-100 border-amber-300 text-amber-700 hover:from-amber-200 hover:to-yellow-200" };
+        return { variant: "outline", className: "bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200" };
       case "Pending":
-        return { variant: "secondary", className: "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0" };
+        return { variant: "secondary", className: "bg-blue-600 hover:bg-blue-700 text-white" };
       default:
         return { variant: "secondary", className: "" };
     }
   };
 
   return (
-    <div className="space-y-8 font-poppins">
+    <div className="space-y-6 font-poppins">
       {/* Header Section */}
-      <div className="flex flex-col space-y-6 md:flex-row md:items-center md:justify-between md:space-y-0">
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-              <Zap className="h-6 w-6" />
+            <div className="p-2 rounded-lg bg-purple-600 text-white">
+              <Zap className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
                 Project Management
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 font-medium">
+              <p className="text-sm text-purple-600 dark:text-purple-300">
                 Create, manage and monitor your AI-powered web projects
               </p>
             </div>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder="Search projects..."
-              className="pl-12 pr-4 w-full sm:w-[300px] h-12 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
+              className="pl-10 pr-4 w-full sm:w-[250px] h-10 border-purple-200 dark:border-purple-700 focus:border-purple-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="h-12 px-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <Filter className="h-5 w-5 mr-2" />
+          <Button variant="outline" className="h-10 px-4 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900">
+            <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
-          <Button className="h-12 px-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl shadow-lg shadow-purple-500/25 transition-all">
-            <Plus className="h-5 w-5 mr-2" />
+          <Button className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white">
+            <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900 border-0 shadow-lg">
-          <CardContent className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Total Projects</p>
-                <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{projectsData.length}</p>
+                <p className="text-xs font-medium text-purple-600 dark:text-purple-400">Total Projects</p>
+                <p className="text-xl font-bold text-purple-900 dark:text-purple-100">{projectsData.length}</p>
               </div>
-              <div className="p-3 bg-blue-500 rounded-xl">
-                <Zap className="h-6 w-6 text-white" />
+              <div className="p-2 bg-purple-600 rounded-lg">
+                <Zap className="h-4 w-4 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 border-0 shadow-lg">
-          <CardContent className="p-6">
+        <Card className="bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-green-600 dark:text-green-400">Active</p>
-                <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+                <p className="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                <p className="text-xl font-bold text-green-900 dark:text-green-100">
                   {projectsData.filter(p => p.status === "Active").length}
                 </p>
               </div>
-              <div className="p-3 bg-green-500 rounded-xl">
-                <Eye className="h-6 w-6 text-white" />
+              <div className="p-2 bg-green-600 rounded-lg">
+                <Eye className="h-4 w-4 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950 dark:to-yellow-900 border-0 shadow-lg">
-          <CardContent className="p-6">
+        <Card className="bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">Draft</p>
-                <p className="text-3xl font-bold text-amber-900 dark:text-amber-100">
+                <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400">Draft</p>
+                <p className="text-xl font-bold text-yellow-900 dark:text-yellow-100">
                   {projectsData.filter(p => p.status === "Draft").length}
                 </p>
               </div>
-              <div className="p-3 bg-amber-500 rounded-xl">
-                <Pencil className="h-6 w-6 text-white" />
+              <div className="p-2 bg-yellow-600 rounded-lg">
+                <Pencil className="h-4 w-4 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-950 dark:to-pink-900 border-0 shadow-lg">
-          <CardContent className="p-6">
+        <Card className="bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-purple-600 dark:text-purple-400">Total Images</p>
-                <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Total Images</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                   {projectsData.reduce((sum, p) => sum + p.imageCount, 0)}
                 </p>
               </div>
-              <div className="p-3 bg-purple-500 rounded-xl">
-                <Server className="h-6 w-6 text-white" />
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Server className="h-4 w-4 text-white" />
               </div>
             </div>
           </CardContent>
@@ -270,60 +271,60 @@ export function ProjectList() {
       </div>
 
       {/* Main Table Card */}
-      <Card className="border-0 shadow-xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-xl">
-          <CardTitle className="text-2xl font-bold">All Projects</CardTitle>
+      <Card className="border-purple-200 dark:border-purple-800">
+        <CardHeader className="bg-purple-600 text-white">
+          <CardTitle className="text-lg font-semibold">All Projects</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50/80 dark:bg-gray-800/50 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 border-b-2 border-gray-200 dark:border-gray-700">
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base py-4">Sr No</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Project Name</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Service Type</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Icon</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Status</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Created At</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base">Image Count</TableHead>
-                  <TableHead className="font-semibold text-gray-700 dark:text-gray-200 text-base text-right w-[60px]">Actions</TableHead>
+                <TableRow className="bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 border-purple-200 dark:border-purple-800">
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm py-3">Sr No</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Project Name</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Service Type</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Icon</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Status</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Created At</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm">Image Count</TableHead>
+                  <TableHead className="font-semibold text-purple-700 dark:text-purple-200 text-sm text-right w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentProjects.map((project, index) => (
                   <TableRow 
                     key={project.id}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-purple-950/20 dark:hover:to-pink-950/20 transition-all duration-200"
+                    className="border-purple-100 dark:border-purple-800 hover:bg-purple-50/50 dark:hover:bg-purple-950/20"
                   >
-                    <TableCell className="font-semibold text-gray-700 dark:text-gray-300 py-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold">
+                    <TableCell className="font-medium text-gray-700 dark:text-gray-300 py-3">
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold">
                         {indexOfFirstItem + index + 1}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold text-gray-800 dark:text-gray-200 text-base">{project.name}</div>
+                      <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{project.name}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-800 dark:text-gray-200 border-0 font-medium px-3 py-1">
+                      <Badge className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1">
                         {project.type}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 h-10 w-10 rounded-xl flex items-center justify-center shadow-sm">
+                      <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 h-8 w-8 rounded-lg flex items-center justify-center">
                         <span className={project.icon}></span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge 
                         variant={getBadgeVariant(project.status).variant as "default" | "destructive" | "outline" | "secondary"}
-                        className={`${getBadgeVariant(project.status).className} px-3 py-1 font-semibold shadow-sm`}
+                        className={`${getBadgeVariant(project.status).className} text-xs px-2 py-1 font-medium`}
                       >
                         {project.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400 font-medium">{project.createdAt}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400 text-sm">{project.createdAt}</TableCell>
                     <TableCell>
-                      <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 border-0 font-semibold px-3 py-1">
+                      <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 font-medium">
                         {project.imageCount}
                       </Badge>
                     </TableCell>
@@ -331,29 +332,29 @@ export function ProjectList() {
                       <div className="flex items-center justify-end">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50 transition-all">
-                              <MoreHorizontal className="h-5 w-5" />
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-purple-100 dark:hover:bg-purple-900">
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
-                            <DropdownMenuItem className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/50 dark:hover:to-indigo-950/50 rounded-lg m-1 transition-all">
-                              <Eye className="mr-3 h-4 w-4" />
+                          <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-gray-900 border-purple-200 dark:border-purple-700">
+                            <DropdownMenuItem className="hover:bg-purple-50 dark:hover:bg-purple-900 text-sm">
+                              <Eye className="mr-2 h-4 w-4" />
                               Preview
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-950/50 dark:hover:to-emerald-950/50 rounded-lg m-1 transition-all">
-                              <ExternalLink className="mr-3 h-4 w-4" />
+                            <DropdownMenuItem className="hover:bg-purple-50 dark:hover:bg-purple-900 text-sm">
+                              <ExternalLink className="mr-2 h-4 w-4" />
                               Live Site
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50 rounded-lg m-1 transition-all">
-                              <Server className="mr-3 h-4 w-4" />
+                            <DropdownMenuItem className="hover:bg-purple-50 dark:hover:bg-purple-900 text-sm">
+                              <Server className="mr-2 h-4 w-4" />
                               Services
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 dark:hover:from-amber-950/50 dark:hover:to-yellow-950/50 rounded-lg m-1 transition-all">
-                              <Pencil className="mr-3 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <DropdownMenuItem className="hover:bg-purple-50 dark:hover:bg-purple-900 text-sm">
+                              <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                               Update Project
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-950/50 dark:hover:to-pink-950/50 rounded-lg m-1 transition-all">
-                              <Trash className="mr-3 h-4 w-4" />
+                            <DropdownMenuItem className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 text-sm">
+                              <Trash className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -364,14 +365,14 @@ export function ProjectList() {
                 ))}
                 {currentProjects.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-48 text-center">
-                      <div className="flex flex-col items-center justify-center text-gray-500 space-y-4">
-                        <div className="p-4 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                          <Search className="h-12 w-12 text-gray-400" />
+                    <TableCell colSpan={8} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500 space-y-3">
+                        <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+                          <Search className="h-8 w-8 text-purple-500" />
                         </div>
-                        <div className="space-y-2">
-                          <p className="text-xl font-semibold">No projects found</p>
-                          <p className="text-base">Try adjusting your search terms or create a new project</p>
+                        <div className="space-y-1">
+                          <p className="text-lg font-medium">No projects found</p>
+                          <p className="text-sm">Try adjusting your search terms or create a new project</p>
                         </div>
                       </div>
                     </TableCell>
@@ -381,20 +382,20 @@ export function ProjectList() {
             </Table>
             
             {filteredProjects.length > 0 && (
-              <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 border-t border-gray-100 dark:border-gray-700">
-                <div className="text-base text-gray-600 dark:text-gray-400 font-medium">
-                  Showing <span className="font-bold text-purple-600 dark:text-purple-400">{indexOfFirstItem + 1}</span> to{" "}
-                  <span className="font-bold text-purple-600 dark:text-purple-400">
+              <div className="flex items-center justify-between px-6 py-4 bg-purple-50/50 dark:bg-purple-950/20 border-t border-purple-200 dark:border-purple-800">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing <span className="font-medium text-purple-600 dark:text-purple-400">{indexOfFirstItem + 1}</span> to{" "}
+                  <span className="font-medium text-purple-600 dark:text-purple-400">
                     {Math.min(indexOfLastItem, filteredProjects.length)}
                   </span>{" "}
-                  of <span className="font-bold text-purple-600 dark:text-purple-400">{filteredProjects.length}</span> projects
+                  of <span className="font-medium text-purple-600 dark:text-purple-400">{filteredProjects.length}</span> projects
                 </div>
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
                         onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                        className={`${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50"} rounded-xl transition-all`}
+                        className={`${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900"} text-sm`}
                       />
                     </PaginationItem>
                     
@@ -403,7 +404,7 @@ export function ProjectList() {
                         <PaginationLink
                           isActive={currentPage === number}
                           onClick={() => handlePageChange(number)}
-                          className={`rounded-xl transition-all ${currentPage === number ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white" : "hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50"}`}
+                          className={`text-sm ${currentPage === number ? "bg-purple-600 hover:bg-purple-700 text-white" : "hover:bg-purple-100 dark:hover:bg-purple-900"}`}
                         >
                           {number}
                         </PaginationLink>
@@ -419,7 +420,7 @@ export function ProjectList() {
                     <PaginationItem>
                       <PaginationNext 
                         onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                        className={`${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50"} rounded-xl transition-all`}
+                        className={`${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900"} text-sm`}
                       />
                     </PaginationItem>
                   </PaginationContent>
