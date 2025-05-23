@@ -17,7 +17,10 @@ import {
   Link,
   FileText,
   Layout,
-  Newspaper
+  Newspaper,
+  FolderOpen,
+  Tag,
+  Tags
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -62,9 +65,19 @@ const getBaseSidebarItems = () => [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-const getWebsiteGeneratorItems = () => [
+const getContentManagementItems = () => [
+  { 
+    id: "post-management", 
+    label: "Posts", 
+    icon: Newspaper,
+    submenu: [
+      { id: "posts", label: "All Posts", icon: Newspaper },
+      { id: "post-categories", label: "Categories", icon: FolderOpen },
+      { id: "post-subcategories", label: "Subcategories", icon: Tag },
+      { id: "post-tags", label: "Tags", icon: Tags },
+    ]
+  },
   { id: "pages", label: "Pages", icon: Layout },
-  { id: "posts", label: "Posts", icon: Newspaper },
   { id: "website-generator", label: "Website Generator", icon: FileText },
 ];
 
@@ -78,16 +91,15 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
     const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
     
     if (isPluginActive) {
-      // Insert website generator items after websites
+      // Insert content management items after websites
       const baseItems = getBaseSidebarItems();
       const websiteIndex = baseItems.findIndex(item => item.id === "websites");
       
-      // Only inject if not already present
       if (websiteIndex !== -1) {
         const newItems = [...baseItems];
-        const generatorItems = getWebsiteGeneratorItems();
+        const contentItems = getContentManagementItems();
         // Insert after websites
-        newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+        newItems.splice(websiteIndex + 1, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     } else {
@@ -103,18 +115,18 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
         const isPluginActive = e.newValue === "true";
         
         if (isPluginActive) {
-          // Add plugin items
+          // Add content management items
           const baseItems = getBaseSidebarItems();
           const websiteIndex = baseItems.findIndex(item => item.id === "websites");
           
           if (websiteIndex !== -1) {
             const newItems = [...baseItems];
-            const generatorItems = getWebsiteGeneratorItems();
-            newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+            const contentItems = getContentManagementItems();
+            newItems.splice(websiteIndex + 1, 0, ...contentItems);
             setSidebarItems(newItems);
           }
         } else {
-          // Remove plugin items
+          // Remove content management items
           setSidebarItems(getBaseSidebarItems());
         }
       }
@@ -128,8 +140,8 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
       
       if (websiteIndex !== -1) {
         const newItems = [...baseItems];
-        const generatorItems = getWebsiteGeneratorItems();
-        newItems.splice(websiteIndex + 1, 0, ...generatorItems);
+        const contentItems = getContentManagementItems();
+        newItems.splice(websiteIndex + 1, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     }

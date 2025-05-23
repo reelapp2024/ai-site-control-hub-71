@@ -24,10 +24,10 @@ export function PostCategoriesManagement() {
   
   // Mock data for categories
   const [categories, setCategories] = useState([
-    { id: "1", name: "Tutorial", slug: "tutorial", description: "Helpful guides and tutorials", count: 1 },
-    { id: "2", name: "Guide", slug: "guide", description: "In-depth guides for advanced users", count: 1 },
-    { id: "3", name: "News", slug: "news", description: "Latest updates and announcements", count: 1 },
-    { id: "4", name: "Performance", slug: "performance", description: "Tips for optimizing performance", count: 1 },
+    { id: "1", name: "Tutorial", slug: "tutorial", description: "Helpful guides and tutorials" },
+    { id: "2", name: "Guide", slug: "guide", description: "In-depth guides for advanced users" },
+    { id: "3", name: "News", slug: "news", description: "Latest updates and announcements" },
+    { id: "4", name: "Performance", slug: "performance", description: "Tips for optimizing performance" },
   ]);
 
   const filteredData = categories.filter(item => 
@@ -49,8 +49,7 @@ export function PostCategoriesManagement() {
       id: (categories.length + 1).toString(),
       name: newName,
       slug: slugToUse,
-      description: newDescription,
-      count: 0
+      description: newDescription
     };
     
     // Add to data
@@ -281,7 +280,6 @@ export function PostCategoriesManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Count</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -292,7 +290,6 @@ export function PostCategoriesManagement() {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.slug}</TableCell>
                     <TableCell>{item.description || "—"}</TableCell>
-                    <TableCell>{item.count}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button 
@@ -315,7 +312,7 @@ export function PostCategoriesManagement() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
+                  <TableCell colSpan={4} className="text-center py-4">
                     No categories found
                   </TableCell>
                 </TableRow>
