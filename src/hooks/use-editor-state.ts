@@ -35,6 +35,7 @@ export function useEditorState(initialContent: string = "") {
     setState((prev) => ({
       ...prev,
       htmlContent,
+      content: htmlContent.replace(/<[^>]*>/g, ''),
       lastAction: "update-html",
     }));
   };
@@ -50,111 +51,91 @@ export function useEditorState(initialContent: string = "") {
   const applyFormat = (format: string, value?: string) => {
     if (!editorRef.current) return;
 
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    // Ensure the editor has focus
     editorRef.current.focus();
-
-    let command = "";
-    let commandValue = undefined;
-
-    // Map our format names to execCommand names
-    switch (format) {
-      case "bold":
-        command = "bold";
-        break;
-      case "italic":
-        command = "italic";
-        break;
-      case "underline":
-        command = "underline";
-        break;
-      case "strikethrough":
-        command = "strikeThrough";
-        break;
-      case "h1":
-      case "h2":
-      case "h3":
-      case "h4":
-      case "h5":
-      case "h6":
-        command = "formatBlock";
-        commandValue = format.toUpperCase();
-        break;
-      case "align-left":
-        command = "justifyLeft";
-        break;
-      case "align-center":
-        command = "justifyCenter";
-        break;
-      case "align-right":
-        command = "justifyRight";
-        break;
-      case "ordered-list":
-        command = "insertOrderedList";
-        break;
-      case "unordered-list":
-        command = "insertUnorderedList";
-        break;
-      case "color":
-        command = "foreColor";
-        commandValue = value;
-        break;
-      case "background":
-        command = "hiliteColor";
-        commandValue = value;
-        break;
-      case "link":
-        command = "createLink";
-        commandValue = value;
-        break;
-      case "indent":
-        command = "indent";
-        break;
-      case "outdent":
-        command = "outdent";
-        break;
-      case "code":
-        // Create a <code> element around the selection
-        try {
-          const range = selection.getRangeAt(0);
-          const codeElement = document.createElement("code");
-          codeElement.className = "bg-gray-100 px-1 py-0.5 rounded text-sm font-mono";
-          
-          if (range.toString()) {
-            range.surroundContents(codeElement);
-          } else {
-            codeElement.textContent = "code";
-            range.insertNode(codeElement);
-            // Place cursor after the code element
-            range.setStartAfter(codeElement);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-          
-          // Update the HTML content after the change
-          updateHtmlContent(editorRef.current.innerHTML);
-        } catch (error) {
-          console.error("Error applying code format:", error);
-        }
-        return;
-      case "blockquote":
-        command = "formatBlock";
-        commandValue = "blockquote";
-        break;
-      default:
-        return;
-    }
-
+    
     try {
-      // Execute the command
-      document.execCommand(command, false, commandValue);
-      
-      // Update the HTML content after the change
-      if (editorRef.current) {
-        updateHtmlContent(editorRef.current.innerHTML);
+      let success = false;
+
+      switch (format) {
+        case "bold":
+          success = document.execCommand("bold", false);
+          break;
+        case "italic":
+          success = document.execCommand("italic", false);
+          break;
+        case "underline":
+          success = document.execCommand("underline", false);
+          break;
+        case "strikethrough":
+          success = document.execCommand("strikeThrough", false);
+          break;
+        case "h1":
+          success = document.execCommand("formatBlock", false, "H1");
+          break;
+        case "h2":
+          success = document.execCommand("formatBlock", false, "H2");
+          break;
+        case "h3":
+          success = document.execCommand("formatBlock", false, "H3");
+          break;
+        case "h4":
+          success = document.execCommand("formatBlock", false, "H4");
+          break;
+        case "h5":
+          success = document.execCommand("formatBlock", false, "H5");
+          break;
+        case "h6":
+          success = document.execCommand("formatBlock", false, "H6");
+          break;
+        case "align-left":
+          success = document.execCommand("justifyLeft", false);
+          break;
+        case "align-center":
+          success = document.execCommand("justifyCenter", false);
+          break;
+        case "align-right":
+          success = document.execCommand("justifyRight", false);
+          break;
+        case "ordered-list":
+          success = document.execCommand("insertOrderedList", false);
+          break;
+        case "unordered-list":
+          success = document.execCommand("insertUnorderedList", false);
+          break;
+        case "blockquote":
+          success = document.execCommand("formatBlock", false, "blockquote");
+          break;
+        case "color":
+          if (value) {
+            success = document.execCommand("foreColor", false, value);
+          }
+          break;
+        case "background":
+          if (value) {
+            success = document.execCommand("hiliteColor", false, value);
+          }
+          break;
+        case "code":
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const codeElement = document.createElement("code");
+            codeElement.style.backgroundColor = "#f4f4f4";
+            codeElement.style.padding = "2px 4px";
+            codeElement.style.borderRadius = "3px";
+            codeElement.style.fontFamily = "monospace";
+            
+            if (range.toString()) {
+              range.surroundContents(codeElement);
+              success = true;
+            }
+          }
+          break;
+      }
+
+      if (success && editorRef.current) {
+        const newHtml = editorRef.current.innerHTML;
+        updateHtmlContent(newHtml);
       }
     } catch (error) {
       console.error("Error applying format:", error);
@@ -164,35 +145,14 @@ export function useEditorState(initialContent: string = "") {
   const insertHTML = (html: string) => {
     if (!editorRef.current) return;
 
-    // Ensure the editor has focus
     editorRef.current.focus();
 
     try {
-      // Try modern approach first
-      if (document.queryCommandSupported && document.queryCommandSupported("insertHTML")) {
-        document.execCommand("insertHTML", false, html);
-      } else {
-        // Fallback for browsers that don't support insertHTML
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          
-          const div = document.createElement('div');
-          div.innerHTML = html;
-          
-          while (div.firstChild) {
-            range.insertNode(div.firstChild);
-          }
-          
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }
+      const success = document.execCommand("insertHTML", false, html);
       
-      // Update the HTML content after the change
-      updateHtmlContent(editorRef.current.innerHTML);
+      if (success && editorRef.current) {
+        updateHtmlContent(editorRef.current.innerHTML);
+      }
     } catch (error) {
       console.error("Error inserting HTML:", error);
     }
@@ -222,13 +182,11 @@ export function useEditorState(initialContent: string = "") {
   const insertTable = (rows: number, cols: number) => {
     let tableHTML = "<table class='border-collapse w-full my-4'>\n<thead>\n<tr>\n";
     
-    // Header row
     for (let i = 0; i < cols; i++) {
       tableHTML += `<th class='border border-gray-300 px-4 py-2'>Header ${i+1}</th>\n`;
     }
     tableHTML += "</tr>\n</thead>\n<tbody>\n";
     
-    // Data rows
     for (let i = 0; i < rows - 1; i++) {
       tableHTML += "<tr>\n";
       for (let j = 0; j < cols; j++) {

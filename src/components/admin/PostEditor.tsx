@@ -40,11 +40,16 @@ export function PostEditor({ postId }: PostEditorProps) {
   const [postTags, setPostTags] = useState<string[]>([]);
   const [postAuthor, setPostAuthor] = useState("");
   const [publishDate, setPublishDate] = useState<Date | undefined>(new Date());
-  const [autoSaveInterval, setAutoSaveInterval] = useState<number | null>(null);
   const [lastSaved, setLastSaved] = useState<string>("");
   const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
   const [readTime, setReadTime] = useState(0);
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [focusKeyword, setFocusKeyword] = useState("");
+  const [canonicalUrl, setCanonicalUrl] = useState("");
+  const [ogImage, setOgImage] = useState("");
+
+  // Editor state and toolbar state variables
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#000000");
@@ -54,14 +59,7 @@ export function PostEditor({ postId }: PostEditorProps) {
   const [replaceText, setReplaceText] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [matchWholeWord, setMatchWholeWord] = useState(false);
-  const [currentChart, setCurrentChart] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDescription, setMetaDescription] = useState("");
-  const [focusKeyword, setFocusKeyword] = useState("");
-  const [canonicalUrl, setCanonicalUrl] = useState("");
-  const [ogImage, setOgImage] = useState("");
   
   const { 
     state: editorState, 
@@ -84,6 +82,31 @@ export function PostEditor({ postId }: PostEditorProps) {
     }
   }, [postTitle, isEditMode, postSlug]);
 
+  useEffect(() => {
+    if (postContent) {
+      const cleanText = postContent.replace(/<[^>]*>/g, ' ');
+      const words = cleanText.split(/\s+/).filter(word => word.length > 0);
+      
+      setWordCount(words.length);
+      setReadTime(Math.ceil(words.length / 200));
+    } else {
+      setWordCount(0);
+      setReadTime(0);
+    }
+  }, [postContent]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (postTitle || postContent) {
+        setLastSaved(new Date().toLocaleTimeString());
+        toast.info("Post auto-saved", { duration: 2000 });
+      }
+    }, 30000);
+    
+    return () => window.clearInterval(interval);
+  }, [postTitle, postContent]);
+
+  // Mock data
   const categories = [
     { id: "1", name: "Tutorial", slug: "tutorial" },
     { id: "2", name: "Guide", slug: "guide" },
@@ -106,8 +129,7 @@ export function PostEditor({ postId }: PostEditorProps) {
       status: "published",
       author: "Admin",
       date: "2023-05-15",
-      comments: 5,
-      content: "This is a comprehensive guide to getting started with AI WebGen. Learn how to create your first AI-powered website in minutes.",
+      content: "This is a comprehensive guide to getting started with AI WebGen.",
       featuredImage: "https://images.unsplash.com/photo-1677442135145-40703ad880fa?w=500&auto=format&fit=crop&q=60",
       featuredImageAlt: "AI generated abstract image",
       tags: ["AI", "Tutorial", "Beginner"],
@@ -118,69 +140,25 @@ export function PostEditor({ postId }: PostEditorProps) {
       canonicalUrl: "https://example.com/getting-started-with-ai-webgen",
       ogImage: "https://images.unsplash.com/photo-1677442135145-40703ad880fa?w=1200&auto=format&fit=crop&q=80"
     },
-    {
-      id: "2",
-      title: "How to Customize Your Website Templates",
-      category: ["Guide"],
-      status: "published",
-      author: "Editor",
-      date: "2023-05-18",
-      comments: 3,
-      content: "Learn how to customize the built-in templates to create unique websites that match your brand identity.",
-      featuredImage: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&auto=format&fit=crop&q=60",
-      featuredImageAlt: "Person coding on laptop",
-      tags: ["Templates", "Customization"],
-      slug: "how-to-customize-website-templates",
-      metaTitle: "How to Customize Your Website Templates | AI WebGen",
-      metaDescription: "Learn how to customize the built-in templates to create unique websites that match your brand identity with AI WebGen.",
-      focusKeyword: "customize website templates",
-      canonicalUrl: "https://example.com/how-to-customize-website-templates",
-      ogImage: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&auto=format&fit=crop&q=80"
-    },
   ];
 
+  // Sync editor state with component state
   useEffect(() => {
-    if (postContent) {
-      const cleanText = postContent.replace(/<[^>]*>/g, ' ');
-      const words = cleanText.split(/\s+/).filter(word => word.length > 0);
-      const chars = cleanText.length;
-      
-      setWordCount(words.length);
-      setCharCount(chars);
-      setReadTime(Math.ceil(words.length / 200));
-    } else {
-      setWordCount(0);
-      setCharCount(0);
-      setReadTime(0);
+    if (editorState.htmlContent !== postHtmlContent) {
+      setPostHtmlContent(editorState.htmlContent);
+      setPostContent(editorState.content);
     }
-  }, [postContent]);
+  }, [editorState.htmlContent, editorState.content]);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (postTitle || postContent) {
-        console.log("Auto-saving post...");
-        setLastSaved(new Date().toLocaleTimeString());
-        toast.info("Post auto-saved", { duration: 2000 });
-      }
-    }, 30000);
-    
-    setAutoSaveInterval(interval);
-    
-    return () => {
-      if (autoSaveInterval) {
-        window.clearInterval(autoSaveInterval);
-      }
-    };
-  }, [postTitle, postContent]);
-
+  // Load post data in edit mode
   useEffect(() => {
     if (isEditMode) {
       const post = posts.find(p => p.id === currentPostId);
       if (post) {
         setPostTitle(post.title);
-        setPostContent(post.content);
-        setPostHtmlContent(`<p>${post.content}</p>`);
-        updateHtmlContent(`<p>${post.content}</p>`);
+        const initialHtml = `<p>${post.content}</p>`;
+        setPostHtmlContent(initialHtml);
+        updateHtmlContent(initialHtml);
         setPostCategory(post.category || []);
         setPostStatus(post.status);
         setPostFeaturedImage(post.featuredImage);
@@ -199,16 +177,7 @@ export function PostEditor({ postId }: PostEditorProps) {
         navigate('/posts');
       }
     }
-  }, [currentPostId, isEditMode, navigate]);
-
-  useEffect(() => {
-    if (editorState.htmlContent !== postHtmlContent) {
-      setPostHtmlContent(editorState.htmlContent);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = editorState.htmlContent;
-      setPostContent(tempDiv.innerText || tempDiv.textContent || '');
-    }
-  }, [editorState.htmlContent]);
+  }, [currentPostId, isEditMode, navigate, updateHtmlContent]);
 
   const handleSave = () => {
     if (!postTitle.trim()) {
@@ -226,39 +195,21 @@ export function PostEditor({ postId }: PostEditorProps) {
     
     setTimeout(() => {
       const generatedHtml = `
-        <h1>Generated AI Content</h1>
+        <h1>Generated AI Content for ${postTitle}</h1>
         <p>This is an AI-generated blog post about ${postTitle}.</p>
         <h2>Introduction</h2>
-        <p>AI-powered content generation can help you create engaging blog posts quickly and efficiently. This post explores key aspects related to your topic.</p>
-        <h2>Key Points</h2>
+        <p>AI-powered content generation can help you create engaging blog posts quickly and efficiently.</p>
+        <h3>Key Points</h3>
         <ol>
           <li>First important point about the topic</li>
           <li>Second important point with more details</li>
           <li>Third important point to consider</li>
         </ol>
         <h2>Conclusion</h2>
-        <p>In conclusion, this AI-generated post provides a starting point that you can expand upon with your expertise.</p>
+        <p>In conclusion, this AI-generated post provides a starting point that you can expand upon.</p>
       `;
       
       updateHtmlContent(generatedHtml);
-      setPostContent(`# Generated AI Content
-
-This is an AI-generated blog post about ${postTitle}.
-
-## Introduction
-
-AI-powered content generation can help you create engaging blog posts quickly and efficiently. This post explores key aspects related to your topic.
-
-## Key Points
-
-1. First important point about the topic
-2. Second important point with more details
-3. Third important point to consider
-
-## Conclusion
-
-In conclusion, this AI-generated post provides a starting point that you can expand upon with your expertise.`);
-      
       toast.success("AI content generated! Edit as needed.");
     }, 1500);
   };
@@ -294,6 +245,9 @@ In conclusion, this AI-generated post provides a starting point that you can exp
       case "h1":
       case "h2":
       case "h3":
+      case "h4":
+      case "h5":
+      case "h6":
       case "align-left":
       case "align-center":
       case "align-right":
@@ -329,14 +283,10 @@ In conclusion, this AI-generated post provides a starting point that you can exp
           const fileUrl = "https://example.com/" + (fileName || "document.pdf");
           
           const fileHtml = `<a href="${fileUrl}" download class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-            </svg>
             Download ${fileName}
           </a>`;
           
           insertHTML(fileHtml);
-          
           setIsUploading(false);
           toast.success("File upload link added");
         }, 1000);
@@ -354,45 +304,29 @@ In conclusion, this AI-generated post provides a starting point that you can exp
       return;
     }
     
-    if (editorView === "code") {
-      let content = postContent;
-      let flags = caseSensitive ? 'g' : 'gi';
-      let searchTerm = findText;
-      
-      if (matchWholeWord) {
-        searchTerm = `\\b${searchTerm}\\b`;
-      }
-      
-      const regex = new RegExp(searchTerm, flags);
-      
-      if (replaceText) {
-        content = content.replace(regex, replaceText);
+    let content = editorView === "code" ? postContent : postHtmlContent;
+    let flags = caseSensitive ? 'g' : 'gi';
+    let searchTerm = findText;
+    
+    if (matchWholeWord) {
+      searchTerm = `\\b${searchTerm}\\b`;
+    }
+    
+    const regex = new RegExp(searchTerm, flags);
+    
+    if (replaceText) {
+      content = content.replace(regex, replaceText);
+      if (editorView === "code") {
         setPostContent(content);
-        toast.success(`Replaced all occurrences of "${findText}"`);
+        updateHtmlContent(`<p>${content.replace(/\n/g, '</p><p>')}</p>`);
       } else {
-        const matches = content.match(regex);
-        toast.info(`Found ${matches ? matches.length : 0} occurrences of "${findText}"`);
-      }
-    } else {
-      let content = postHtmlContent;
-      let flags = caseSensitive ? 'g' : 'gi';
-      let searchTerm = findText;
-      
-      if (matchWholeWord) {
-        searchTerm = `\\b${searchTerm}\\b`;
-      }
-      
-      const regex = new RegExp(searchTerm, flags);
-      
-      if (replaceText) {
-        content = content.replace(regex, replaceText);
         updateHtmlContent(content);
-        toast.success(`Replaced all occurrences of "${findText}"`);
-      } else {
-        const textContent = content.replace(/<[^>]*>/g, ' ');
-        const matches = textContent.match(regex);
-        toast.info(`Found ${matches ? matches.length : 0} occurrences of "${findText}"`);
       }
+      toast.success(`Replaced all occurrences of "${findText}"`);
+    } else {
+      const textContent = editorView === "code" ? content : content.replace(/<[^>]*>/g, ' ');
+      const matches = textContent.match(regex);
+      toast.info(`Found ${matches ? matches.length : 0} occurrences of "${findText}"`);
     }
   };
   
@@ -407,12 +341,25 @@ In conclusion, this AI-generated post provides a starting point that you can exp
     const text = e.clipboardData.getData('text/plain');
     document.execCommand('insertText', false, text);
     
-    // Update content after paste
     setTimeout(() => {
       if (editorRef.current) {
         updateHtmlContent(editorRef.current.innerHTML);
       }
     }, 10);
+  };
+
+  const handleCodeContentChange = (newContent: string) => {
+    setPostContent(newContent);
+    // Convert markdown-like content to HTML
+    const htmlContent = newContent
+      .replace(/\n/g, '</p><p>')
+      .replace(/# (.*?)<\/p>/g, '<h1>$1</h1>')
+      .replace(/## (.*?)<\/p>/g, '<h2>$1</h2>')
+      .replace(/### (.*?)<\/p>/g, '<h3>$1</h3>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    updateHtmlContent(`<p>${htmlContent}</p>`);
   };
 
   return (
@@ -545,7 +492,7 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                         selected={publishDate}
                         onSelect={setPublishDate}
                         initialFocus
-                        className="p-3 pointer-events-auto"
+                        className="p-3"
                       />
                     </PopoverContent>
                   </Popover>
@@ -612,15 +559,11 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                 
                 {editorView === "code" ? (
                   <Textarea
-                    placeholder="Write your content here. Supports Markdown."
+                    placeholder="Write your content here. Use # for H1, ## for H2, ### for H3, **bold**, *italic*"
                     rows={16}
                     className="min-h-[450px] font-mono"
                     value={postContent}
-                    onChange={(e) => {
-                      setPostContent(e.target.value);
-                      // Update HTML content from markdown/text content
-                      updateHtmlContent(`<p>${e.target.value.replace(/\n/g, '</p><p>')}</p>`);
-                    }}
+                    onChange={(e) => handleCodeContentChange(e.target.value)}
                   />
                 ) : (
                   <div className="border rounded-md p-4 min-h-[450px]">
@@ -632,12 +575,12 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                       style={{ 
                         direction: 'ltr',
                         textAlign: 'left',
-                        unicodeBidi: 'normal'
+                        unicodeBidi: 'normal',
+                        writingMode: 'horizontal-tb'
                       }}
                       onInput={handleContentChange}
                       onPaste={handleContentPaste}
                       onKeyDown={(e) => {
-                        // Handle keyboard shortcuts
                         if (e.ctrlKey || e.metaKey) {
                           switch (e.key.toLowerCase()) {
                             case 'b':
@@ -660,17 +603,13 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                                 undo();
                               }
                               break;
-                            case 'y':
-                              e.preventDefault();
-                              redo();
-                              break;
                           }
                         }
                       }}
                       dangerouslySetInnerHTML={{ 
                         __html: editorState.htmlContent || '<p>Start writing your content here...</p>' 
                       }}
-                    ></div>
+                    />
                   </div>
                 )}
               </div>
@@ -691,37 +630,10 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                     )}
                   </figure>
                 )}
-                {editorView === "code" ? (
-                  postContent ? (
-                    <div 
-                      className="prose prose-lg max-w-none dark:prose-invert whitespace-pre-wrap" 
-                      dangerouslySetInnerHTML={{ 
-                        __html: postContent.replace(/\n/g, "<br />")
-                          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/_(.*?)_/g, "<em>$1</em>")
-                          .replace(/~~/g, "<s>")
-                          .replace(/~~/g, "</s>")
-                          .replace(/# (.*?)(\n|$)/g, "<h1>$1</h1>")
-                          .replace(/## (.*?)(\n|$)/g, "<h2>$1</h2>")
-                          .replace(/### (.*?)(\n|$)/g, "<h3>$1</h3>")
-                          .replace(/> (.*?)(\n|$)/g, "<blockquote>$1</blockquote>")
-                          .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
-                          .replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2' target='_blank' rel='noopener noreferrer'>$1</a>")
-                      }}
-                    ></div>
-                  ) : (
-                    <p className="text-gray-400">No content yet. Start writing in the Write tab.</p>
-                  )
-                ) : (
-                  editorState.htmlContent ? (
-                    <div 
-                      className="prose prose-lg max-w-none dark:prose-invert" 
-                      dangerouslySetInnerHTML={{ __html: editorState.htmlContent }}
-                    ></div>
-                  ) : (
-                    <p className="text-gray-400">No content yet. Start writing in the Write tab.</p>
-                  )
-                )}
+                <div 
+                  className="prose prose-lg max-w-none dark:prose-invert" 
+                  dangerouslySetInnerHTML={{ __html: editorState.htmlContent || '<p>No content yet. Start writing in the Write tab.</p>' }}
+                />
               </Card>
             </TabsContent>
             
@@ -857,58 +769,6 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                       >
                         {postFeaturedImage ? "Present" : "Missing"}
                       </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="border rounded-md p-4">
-                  <h3 className="text-lg font-medium mb-4">Social Media Preview</h3>
-                  
-                  <div className="border rounded-md overflow-hidden mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-950 p-2 text-sm text-blue-600 dark:text-blue-400">
-                      Facebook
-                    </div>
-                    <div className="p-2">
-                      {ogImage && (
-                        <div className="aspect-video w-full mb-2 rounded overflow-hidden bg-gray-100">
-                          <img src={ogImage} alt="OG Preview" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="mt-2">
-                        <div className="text-sm text-muted-foreground overflow-hidden text-ellipsis">
-                          {canonicalUrl || "https://yourwebsite.com"}
-                        </div>
-                        <h4 className="text-base font-semibold line-clamp-1">
-                          {metaTitle || postTitle || "Post Title"}
-                        </h4>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {metaDescription || "Your meta description will appear here. Make sure to add one for better SEO."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border rounded-md overflow-hidden">
-                    <div className="bg-sky-50 dark:bg-sky-950 p-2 text-sm text-sky-600 dark:text-sky-400">
-                      Twitter Card
-                    </div>
-                    <div className="p-2">
-                      {ogImage && (
-                        <div className="aspect-[2/1] w-full mb-2 rounded overflow-hidden bg-gray-100">
-                          <img src={ogImage} alt="Twitter Card Preview" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="mt-2">
-                        <h4 className="text-base font-semibold line-clamp-1">
-                          {metaTitle || postTitle || "Post Title"}
-                        </h4>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {metaDescription || "Your meta description will appear here. Make sure to add one for better SEO."}
-                        </p>
-                        <div className="text-sm text-muted-foreground overflow-hidden text-ellipsis mt-1">
-                          {canonicalUrl || "https://yourwebsite.com"}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
