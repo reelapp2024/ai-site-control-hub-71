@@ -189,6 +189,37 @@ export function PostEditor({ postId }: PostEditorProps) {
     return score;
   };
 
+  const handleFindReplace = () => {
+    if (!editorRef.current || !findText) return;
+    
+    console.log("Find and replace:", findText, "->", replaceText);
+    
+    const content = editorRef.current.innerHTML;
+    let searchText = findText;
+    
+    if (!caseSensitive) {
+      searchText = findText.toLowerCase();
+    }
+    
+    let updatedContent = content;
+    
+    if (matchWholeWord) {
+      const regex = new RegExp(`\\b${findText}\\b`, caseSensitive ? 'g' : 'gi');
+      updatedContent = content.replace(regex, replaceText);
+    } else {
+      const regex = new RegExp(findText, caseSensitive ? 'g' : 'gi');
+      updatedContent = content.replace(regex, replaceText);
+    }
+    
+    if (updatedContent !== content) {
+      editorRef.current.innerHTML = updatedContent;
+      updateHtmlContent(updatedContent);
+      toast.success("Text replaced successfully");
+    } else {
+      toast.info("No matches found");
+    }
+  };
+
   const seoScore = calculateSEOScore();
   
   const handleEditorAction = (action: string, value?: any) => {
