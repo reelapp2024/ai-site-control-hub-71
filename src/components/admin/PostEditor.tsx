@@ -142,43 +142,6 @@ export function PostEditor({ postId }: PostEditorProps) {
     },
   ];
 
-  // Sync editor state with component state
-  useEffect(() => {
-    if (editorState.htmlContent !== postHtmlContent) {
-      setPostHtmlContent(editorState.htmlContent);
-      setPostContent(editorState.content);
-    }
-  }, [editorState.htmlContent, editorState.content]);
-
-  // Load post data in edit mode
-  useEffect(() => {
-    if (isEditMode) {
-      const post = posts.find(p => p.id === currentPostId);
-      if (post) {
-        setPostTitle(post.title);
-        const initialHtml = `<p>${post.content}</p>`;
-        setPostHtmlContent(initialHtml);
-        updateHtmlContent(initialHtml);
-        setPostCategory(post.category || []);
-        setPostStatus(post.status);
-        setPostFeaturedImage(post.featuredImage);
-        setFeaturedImageAlt(post.featuredImageAlt || "");
-        setPostTags(post.tags || []);
-        setPostAuthor(post.author);
-        setPublishDate(post.date ? new Date(post.date) : new Date());
-        setPostSlug(post.slug || "");
-        setMetaTitle(post.metaTitle || post.title);
-        setMetaDescription(post.metaDescription || "");
-        setFocusKeyword(post.focusKeyword || "");
-        setCanonicalUrl(post.canonicalUrl || "");
-        setOgImage(post.ogImage || post.featuredImage);
-      } else {
-        toast.error("Post not found");
-        navigate('/posts');
-      }
-    }
-  }, [currentPostId, isEditMode, navigate, updateHtmlContent]);
-
   const handleSave = () => {
     if (!postTitle.trim()) {
       toast.error("Please enter a post title");
@@ -229,6 +192,8 @@ export function PostEditor({ postId }: PostEditorProps) {
   const seoScore = calculateSEOScore();
   
   const handleEditorAction = (action: string, value?: any) => {
+    console.log("Editor action:", action, value);
+    
     switch (action) {
       case "undo":
         undo();
@@ -295,44 +260,16 @@ export function PostEditor({ postId }: PostEditorProps) {
   };
 
   const handleCodeTabChange = (view: "visual" | "code") => {
+    console.log("Switching to view:", view);
     setEditorView(view);
-  };
-  
-  const handleFindReplace = () => {
-    if (!findText) {
-      toast.error("Please enter text to find");
-      return;
-    }
-    
-    let content = editorView === "code" ? postContent : postHtmlContent;
-    let flags = caseSensitive ? 'g' : 'gi';
-    let searchTerm = findText;
-    
-    if (matchWholeWord) {
-      searchTerm = `\\b${searchTerm}\\b`;
-    }
-    
-    const regex = new RegExp(searchTerm, flags);
-    
-    if (replaceText) {
-      content = content.replace(regex, replaceText);
-      if (editorView === "code") {
-        setPostContent(content);
-        updateHtmlContent(`<p>${content.replace(/\n/g, '</p><p>')}</p>`);
-      } else {
-        updateHtmlContent(content);
-      }
-      toast.success(`Replaced all occurrences of "${findText}"`);
-    } else {
-      const textContent = editorView === "code" ? content : content.replace(/<[^>]*>/g, ' ');
-      const matches = textContent.match(regex);
-      toast.info(`Found ${matches ? matches.length : 0} occurrences of "${findText}"`);
-    }
   };
   
   const handleContentChange = () => {
     if (editorRef.current) {
-      updateHtmlContent(editorRef.current.innerHTML);
+      const newHtml = editorRef.current.innerHTML;
+      console.log("Content changed:", newHtml);
+      updateHtmlContent(newHtml);
+      setPostHtmlContent(newHtml);
     }
   };
   
@@ -349,18 +286,63 @@ export function PostEditor({ postId }: PostEditorProps) {
   };
 
   const handleCodeContentChange = (newContent: string) => {
+    console.log("Code content changed:", newContent);
     setPostContent(newContent);
-    // Convert markdown-like content to HTML
-    const htmlContent = newContent
-      .replace(/\n/g, '</p><p>')
-      .replace(/# (.*?)<\/p>/g, '<h1>$1</h1>')
-      .replace(/## (.*?)<\/p>/g, '<h2>$1</h2>')
-      .replace(/### (.*?)<\/p>/g, '<h3>$1</h3>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
     
-    updateHtmlContent(`<p>${htmlContent}</p>`);
+    // Convert markdown-like content to HTML
+    let htmlContent = newContent
+      .replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>')
+      .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')
+      .replace(/# (.*?)(\n|$)/g, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    
+    if (!htmlContent.startsWith('<')) {
+      htmlContent = '<p>' + htmlContent + '</p>';
+    }
+    
+    updateHtmlContent(htmlContent);
+    setPostHtmlContent(htmlContent);
   };
+
+  // Sync editor state with component state
+  useEffect(() => {
+    if (editorState.htmlContent !== postHtmlContent) {
+      setPostHtmlContent(editorState.htmlContent);
+      setPostContent(editorState.content);
+    }
+  }, [editorState.htmlContent, editorState.content]);
+
+  // Load post data in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      const post = posts.find(p => p.id === currentPostId);
+      if (post) {
+        setPostTitle(post.title);
+        const initialHtml = `<p>${post.content}</p>`;
+        setPostHtmlContent(initialHtml);
+        updateHtmlContent(initialHtml);
+        setPostCategory(post.category || []);
+        setPostStatus(post.status);
+        setPostFeaturedImage(post.featuredImage);
+        setFeaturedImageAlt(post.featuredImageAlt || "");
+        setPostTags(post.tags || []);
+        setPostAuthor(post.author);
+        setPublishDate(post.date ? new Date(post.date) : new Date());
+        setPostSlug(post.slug || "");
+        setMetaTitle(post.metaTitle || post.title);
+        setMetaDescription(post.metaDescription || "");
+        setFocusKeyword(post.focusKeyword || "");
+        setCanonicalUrl(post.canonicalUrl || "");
+        setOgImage(post.ogImage || post.featuredImage);
+      } else {
+        toast.error("Post not found");
+        navigate('/posts');
+      }
+    }
+  }, [currentPostId, isEditMode, navigate, updateHtmlContent]);
 
   return (
     <div className="space-y-6">
@@ -561,7 +543,8 @@ export function PostEditor({ postId }: PostEditorProps) {
                   <Textarea
                     placeholder="Write your content here. Use # for H1, ## for H2, ### for H3, **bold**, *italic*"
                     rows={16}
-                    className="min-h-[450px] font-mono"
+                    className="min-h-[450px] font-mono text-left"
+                    style={{ direction: 'ltr', textAlign: 'left' }}
                     value={postContent}
                     onChange={(e) => handleCodeContentChange(e.target.value)}
                   />
