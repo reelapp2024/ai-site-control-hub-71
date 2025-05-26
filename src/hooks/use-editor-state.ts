@@ -14,7 +14,7 @@ export interface EditorState {
 export function useEditorState(initialContent: string = "") {
   const [state, setState] = useState<EditorState>({
     content: initialContent,
-    htmlContent: initialContent,
+    htmlContent: initialContent || '<p>Start writing your content here...</p>',
     selection: {
       start: 0,
       end: 0,
@@ -54,16 +54,35 @@ export function useEditorState(initialContent: string = "") {
     if (!editorRef.current) return false;
     
     editorRef.current.focus();
-    document.execCommand(command, false, value);
+    
+    // Save current selection
+    const selection = window.getSelection();
+    const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    
+    console.log(`Executing command: ${command}`, value);
+    
+    const success = document.execCommand(command, false, value);
+    
+    // Restore selection if command changed it
+    if (range && selection) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } catch (e) {
+        console.log("Could not restore selection:", e);
+      }
+    }
     
     // Update content after command
     setTimeout(() => {
       if (editorRef.current) {
-        updateHtmlContent(editorRef.current.innerHTML);
+        const newHtml = editorRef.current.innerHTML;
+        console.log("Content after command:", newHtml);
+        updateHtmlContent(newHtml);
       }
     }, 10);
     
-    return true;
+    return success;
   };
 
   const applyFormat = (format: string, value?: string) => {
@@ -87,22 +106,22 @@ export function useEditorState(initialContent: string = "") {
         success = execCommand("strikeThrough");
         break;
       case "h1":
-        success = execCommand("formatBlock", "<h1>");
+        success = execCommand("formatBlock", "h1");
         break;
       case "h2":
-        success = execCommand("formatBlock", "<h2>");
+        success = execCommand("formatBlock", "h2");
         break;
       case "h3":
-        success = execCommand("formatBlock", "<h3>");
+        success = execCommand("formatBlock", "h3");
         break;
       case "h4":
-        success = execCommand("formatBlock", "<h4>");
+        success = execCommand("formatBlock", "h4");
         break;
       case "h5":
-        success = execCommand("formatBlock", "<h5>");
+        success = execCommand("formatBlock", "h5");
         break;
       case "h6":
-        success = execCommand("formatBlock", "<h6>");
+        success = execCommand("formatBlock", "h6");
         break;
       case "align-left":
         success = execCommand("justifyLeft");
@@ -120,7 +139,7 @@ export function useEditorState(initialContent: string = "") {
         success = execCommand("insertUnorderedList");
         break;
       case "blockquote":
-        success = execCommand("formatBlock", "<blockquote>");
+        success = execCommand("formatBlock", "blockquote");
         break;
       case "color":
         if (value) {
@@ -133,7 +152,7 @@ export function useEditorState(initialContent: string = "") {
         }
         break;
       case "code":
-        success = execCommand("formatBlock", "<pre>");
+        success = execCommand("formatBlock", "pre");
         break;
     }
 

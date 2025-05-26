@@ -172,7 +172,11 @@ export function PostEditor({ postId }: PostEditorProps) {
         <p>In conclusion, this AI-generated post provides a starting point that you can expand upon.</p>
       `;
       
-      updateHtmlContent(generatedHtml);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = generatedHtml;
+        updateHtmlContent(generatedHtml);
+        setPostHtmlContent(generatedHtml);
+      }
       toast.success("AI content generated! Edit as needed.");
     }, 1500);
   };
@@ -293,14 +297,34 @@ export function PostEditor({ postId }: PostEditorProps) {
   const handleCodeTabChange = (view: "visual" | "code") => {
     console.log("Switching to view:", view);
     setEditorView(view);
+    
+    if (view === "code" && editorRef.current) {
+      // Convert HTML to plain text for code view
+      const htmlContent = editorRef.current.innerHTML;
+      const textContent = htmlContent
+        .replace(/<h1>(.*?)<\/h1>/g, '# $1\n')
+        .replace(/<h2>(.*?)<\/h2>/g, '## $1\n')
+        .replace(/<h3>(.*?)<\/h3>/g, '### $1\n')
+        .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+        .replace(/<em>(.*?)<\/em>/g, '*$1*')
+        .replace(/<p>(.*?)<\/p>/g, '$1\n\n')
+        .replace(/<br\s*\/?>/g, '\n')
+        .replace(/<[^>]*>/g, '');
+      
+      setPostContent(textContent);
+    }
   };
   
   const handleContentChange = () => {
     if (editorRef.current) {
       const newHtml = editorRef.current.innerHTML;
-      console.log("Content changed:", newHtml);
+      console.log("Content changed in visual editor:", newHtml);
       updateHtmlContent(newHtml);
       setPostHtmlContent(newHtml);
+      
+      // Update plain text content too
+      const textContent = newHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      setPostContent(textContent);
     }
   };
   
@@ -312,6 +336,7 @@ export function PostEditor({ postId }: PostEditorProps) {
     setTimeout(() => {
       if (editorRef.current) {
         updateHtmlContent(editorRef.current.innerHTML);
+        handleContentChange();
       }
     }, 10);
   };
@@ -336,6 +361,11 @@ export function PostEditor({ postId }: PostEditorProps) {
     
     updateHtmlContent(htmlContent);
     setPostHtmlContent(htmlContent);
+    
+    // Update visual editor
+    if (editorRef.current && editorView === "code") {
+      editorRef.current.innerHTML = htmlContent;
+    }
   };
 
   // Sync editor state with component state
@@ -346,6 +376,13 @@ export function PostEditor({ postId }: PostEditorProps) {
     }
   }, [editorState.htmlContent, editorState.content]);
 
+  // Initialize editor content
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = '<p>Start writing your content here...</p>';
+    }
+  }, []);
+
   // Load post data in edit mode
   useEffect(() => {
     if (isEditMode) {
@@ -355,6 +392,11 @@ export function PostEditor({ postId }: PostEditorProps) {
         const initialHtml = `<p>${post.content}</p>`;
         setPostHtmlContent(initialHtml);
         updateHtmlContent(initialHtml);
+        
+        if (editorRef.current) {
+          editorRef.current.innerHTML = initialHtml;
+        }
+        
         setPostCategory(post.category || []);
         setPostStatus(post.status);
         setPostFeaturedImage(post.featuredImage);
@@ -574,7 +616,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                   <Textarea
                     placeholder="Write your content here. Use # for H1, ## for H2, ### for H3, **bold**, *italic*"
                     rows={16}
-                    className="min-h-[450px] font-mono text-left"
+                    className="min-h-[450px] font-mono"
                     style={{ direction: 'ltr', textAlign: 'left' }}
                     value={postContent}
                     onChange={(e) => handleCodeContentChange(e.target.value)}
@@ -620,9 +662,6 @@ export function PostEditor({ postId }: PostEditorProps) {
                           }
                         }
                       }}
-                      dangerouslySetInnerHTML={{ 
-                        __html: editorState.htmlContent || '<p>Start writing your content here...</p>' 
-                      }}
                     />
                   </div>
                 )}
@@ -645,7 +684,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                   </figure>
                 )}
                 <div 
-                  className="prose prose-lg max-w-none dark:prose-invert" 
+                  className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-base prose-h6:text-sm" 
                   dangerouslySetInnerHTML={{ __html: editorState.htmlContent || '<p>No content yet. Start writing in the Write tab.</p>' }}
                 />
               </Card>
