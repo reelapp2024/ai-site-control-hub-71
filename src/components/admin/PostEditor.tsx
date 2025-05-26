@@ -406,6 +406,13 @@ In conclusion, this AI-generated post provides a starting point that you can exp
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     document.execCommand('insertText', false, text);
+    
+    // Update content after paste
+    setTimeout(() => {
+      if (editorRef.current) {
+        updateHtmlContent(editorRef.current.innerHTML);
+      }
+    }, 10);
   };
 
   return (
@@ -611,6 +618,8 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                     value={postContent}
                     onChange={(e) => {
                       setPostContent(e.target.value);
+                      // Update HTML content from markdown/text content
+                      updateHtmlContent(`<p>${e.target.value.replace(/\n/g, '</p><p>')}</p>`);
                     }}
                   />
                 ) : (
@@ -618,10 +627,49 @@ In conclusion, this AI-generated post provides a starting point that you can exp
                     <div
                       ref={editorRef}
                       contentEditable
-                      className="outline-none min-h-[440px] prose prose-sm max-w-none"
+                      suppressContentEditableWarning={true}
+                      className="outline-none min-h-[440px] prose prose-sm max-w-none focus:ring-0 focus:outline-none"
+                      style={{ 
+                        direction: 'ltr',
+                        textAlign: 'left',
+                        unicodeBidi: 'normal'
+                      }}
                       onInput={handleContentChange}
                       onPaste={handleContentPaste}
-                      dangerouslySetInnerHTML={{ __html: editorState.htmlContent || '<p>Start writing your content here...</p>' }}
+                      onKeyDown={(e) => {
+                        // Handle keyboard shortcuts
+                        if (e.ctrlKey || e.metaKey) {
+                          switch (e.key.toLowerCase()) {
+                            case 'b':
+                              e.preventDefault();
+                              applyFormat('bold');
+                              break;
+                            case 'i':
+                              e.preventDefault();
+                              applyFormat('italic');
+                              break;
+                            case 'u':
+                              e.preventDefault();
+                              applyFormat('underline');
+                              break;
+                            case 'z':
+                              e.preventDefault();
+                              if (e.shiftKey) {
+                                redo();
+                              } else {
+                                undo();
+                              }
+                              break;
+                            case 'y':
+                              e.preventDefault();
+                              redo();
+                              break;
+                          }
+                        }
+                      }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: editorState.htmlContent || '<p>Start writing your content here...</p>' 
+                      }}
                     ></div>
                   </div>
                 )}

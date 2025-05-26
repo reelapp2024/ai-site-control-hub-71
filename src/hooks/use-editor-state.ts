@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 
 export interface EditorState {
@@ -54,9 +53,11 @@ export function useEditorState(initialContent: string = "") {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
-    const range = selection.getRangeAt(0);
+    // Ensure the editor has focus
+    editorRef.current.focus();
+
     let command = "";
-    let value2 = undefined;
+    let commandValue = undefined;
 
     // Map our format names to execCommand names
     switch (format) {
@@ -79,7 +80,7 @@ export function useEditorState(initialContent: string = "") {
       case "h5":
       case "h6":
         command = "formatBlock";
-        value2 = format;
+        commandValue = format.toUpperCase();
         break;
       case "align-left":
         command = "justifyLeft";
@@ -98,15 +99,15 @@ export function useEditorState(initialContent: string = "") {
         break;
       case "color":
         command = "foreColor";
-        value2 = value;
+        commandValue = value;
         break;
       case "background":
         command = "hiliteColor";
-        value2 = value;
+        commandValue = value;
         break;
       case "link":
         command = "createLink";
-        value2 = value;
+        commandValue = value;
         break;
       case "indent":
         command = "indent";
@@ -116,18 +117,32 @@ export function useEditorState(initialContent: string = "") {
         break;
       case "code":
         // Create a <code> element around the selection
-        const codeElement = document.createElement("code");
-        codeElement.className = "bg-gray-100 p-1 rounded text-sm font-mono";
-        range.surroundContents(codeElement);
-        
-        // Update the HTML content after the change
-        if (editorRef.current) {
+        try {
+          const range = selection.getRangeAt(0);
+          const codeElement = document.createElement("code");
+          codeElement.className = "bg-gray-100 px-1 py-0.5 rounded text-sm font-mono";
+          
+          if (range.toString()) {
+            range.surroundContents(codeElement);
+          } else {
+            codeElement.textContent = "code";
+            range.insertNode(codeElement);
+            // Place cursor after the code element
+            range.setStartAfter(codeElement);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+          
+          // Update the HTML content after the change
           updateHtmlContent(editorRef.current.innerHTML);
+        } catch (error) {
+          console.error("Error applying code format:", error);
         }
         return;
       case "blockquote":
         command = "formatBlock";
-        value2 = "blockquote";
+        commandValue = "blockquote";
         break;
       default:
         return;
@@ -135,7 +150,7 @@ export function useEditorState(initialContent: string = "") {
 
     try {
       // Execute the command
-      document.execCommand(command, false, value2);
+      document.execCommand(command, false, commandValue);
       
       // Update the HTML content after the change
       if (editorRef.current) {
@@ -149,8 +164,32 @@ export function useEditorState(initialContent: string = "") {
   const insertHTML = (html: string) => {
     if (!editorRef.current) return;
 
+    // Ensure the editor has focus
+    editorRef.current.focus();
+
     try {
-      document.execCommand("insertHTML", false, html);
+      // Try modern approach first
+      if (document.queryCommandSupported && document.queryCommandSupported("insertHTML")) {
+        document.execCommand("insertHTML", false, html);
+      } else {
+        // Fallback for browsers that don't support insertHTML
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          
+          const div = document.createElement('div');
+          div.innerHTML = html;
+          
+          while (div.firstChild) {
+            range.insertNode(div.firstChild);
+          }
+          
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
       
       // Update the HTML content after the change
       updateHtmlContent(editorRef.current.innerHTML);
@@ -209,16 +248,24 @@ export function useEditorState(initialContent: string = "") {
   };
 
   const undo = () => {
-    document.execCommand("undo", false);
-    if (editorRef.current) {
-      updateHtmlContent(editorRef.current.innerHTML);
+    try {
+      document.execCommand("undo", false);
+      if (editorRef.current) {
+        updateHtmlContent(editorRef.current.innerHTML);
+      }
+    } catch (error) {
+      console.error("Error with undo:", error);
     }
   };
 
   const redo = () => {
-    document.execCommand("redo", false);
-    if (editorRef.current) {
-      updateHtmlContent(editorRef.current.innerHTML);
+    try {
+      document.execCommand("redo", false);
+      if (editorRef.current) {
+        updateHtmlContent(editorRef.current.innerHTML);
+      }
+    } catch (error) {
+      console.error("Error with redo:", error);
     }
   };
 
