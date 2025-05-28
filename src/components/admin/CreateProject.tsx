@@ -1,4 +1,3 @@
-
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -42,6 +41,9 @@ export function CreateProject() {
   const [currentCountryPage, setCurrentCountryPage] = useState(1);
   const countriesPerPage = 10;
 
+  // Page creation for countries
+  const [countryPageCreation, setCountryPageCreation] = useState<{[country: string]: boolean}>({});
+
   // States management
   const [states, setStates] = useState<{[country: string]: string[]}>({});
   const [selectedStates, setSelectedStates] = useState<{[country: string]: string[]}>({});
@@ -70,8 +72,7 @@ export function CreateProject() {
   const [showFinalSuccess, setShowFinalSuccess] = useState(false);
   const [redirectCounter, setRedirectCounter] = useState(7);
 
-  // Page creation option
-  const [createPagesForLocations, setCreatePagesForLocations] = useState(false);
+  // Page creation option - removed from here, now managed per country
 
   useEffect(() => {
     async function fetchCountries() {
@@ -351,9 +352,22 @@ export function CreateProject() {
   const toggleCountry = (country: string) => {
     if (selectedCountries.includes(country)) {
       setSelectedCountries(selectedCountries.filter(c => c !== country));
+      // Remove page creation setting when country is deselected
+      const updatedPageCreation = { ...countryPageCreation };
+      delete updatedPageCreation[country];
+      setCountryPageCreation(updatedPageCreation);
     } else {
       setSelectedCountries([...selectedCountries, country]);
+      // Initialize page creation setting for new country
+      setCountryPageCreation({ ...countryPageCreation, [country]: false });
     }
+  };
+
+  const toggleCountryPageCreation = (country: string) => {
+    setCountryPageCreation({
+      ...countryPageCreation,
+      [country]: !countryPageCreation[country]
+    });
   };
 
   const toggleState = (country: string, state: string) => {
@@ -484,6 +498,7 @@ export function CreateProject() {
     setCountries([]);
     setSelectedCountries([]);
     setCountryInput("");
+    setCountryPageCreation({});
     setStates({});
     setSelectedStates({});
     setStateInput({});
@@ -540,7 +555,7 @@ export function CreateProject() {
                 htmlFor="createPages"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Create pages for selected locations?
+                Create pages for this project?
               </label>
             </div>
           </div>
@@ -594,42 +609,41 @@ export function CreateProject() {
                 </Button>
               </div>
 
-              {/* Page creation option for countries */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="createPagesForLocations"
-                    checked={createPagesForLocations}
-                    onCheckedChange={(checked) => setCreatePagesForLocations(checked === true)}
-                  />
-                  <label
-                    htmlFor="createPagesForLocations"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Create individual pages for each selected location
-                  </label>
-                </div>
-                <p className="text-xs text-blue-600 mt-1">
-                  When enabled, a separate page will be created for each country, state, city, and local area you select.
-                </p>
-              </div>
-
               {/* Paginated countries list */}
               <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3">
                   {currentCountries.map(country => (
-                    <div key={country} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`country-${country}`}
-                        checked={selectedCountries.includes(country)}
-                        onCheckedChange={() => toggleCountry(country)}
-                      />
-                      <label
-                        htmlFor={`country-${country}`}
-                        className="text-sm font-medium leading-none cursor-pointer"
-                      >
-                        {country}
-                      </label>
+                    <div key={country} className="border p-3 rounded-md bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`country-${country}`}
+                            checked={selectedCountries.includes(country)}
+                            onCheckedChange={() => toggleCountry(country)}
+                          />
+                          <label
+                            htmlFor={`country-${country}`}
+                            className="text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {country}
+                          </label>
+                        </div>
+                        {selectedCountries.includes(country) && (
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`page-${country}`}
+                              checked={countryPageCreation[country] || false}
+                              onCheckedChange={() => toggleCountryPageCreation(country)}
+                            />
+                            <label
+                              htmlFor={`page-${country}`}
+                              className="text-xs text-blue-600 cursor-pointer"
+                            >
+                              Create page for {country}
+                            </label>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -667,6 +681,9 @@ export function CreateProject() {
                   {selectedCountries.map(country => (
                     <Badge key={country} variant="secondary" className="flex items-center gap-1">
                       {country}
+                      {countryPageCreation[country] && (
+                        <span className="text-xs text-blue-600">(Page)</span>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeCountry(country)}
@@ -950,8 +967,21 @@ export function CreateProject() {
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-500">Create Pages for Locations</h4>
-                <p className="font-medium">{createPagesForLocations ? "Yes" : "No"}</p>
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Countries with Page Creation</h4>
+                <div className="space-y-2">
+                  {selectedCountries.map(country => (
+                    <div key={country} className="flex items-center justify-between p-2 bg-white rounded border">
+                      <span className="font-medium">{country}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        countryPageCreation[country] 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {countryPageCreation[country] ? 'Page will be created' : 'No page'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>
