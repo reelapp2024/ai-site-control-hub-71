@@ -22,7 +22,6 @@ export function CreateProject() {
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [wantImages, setWantImages] = useState(false);
-  const [createPages, setCreatePages] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(0);
 
@@ -36,8 +35,7 @@ export function CreateProject() {
   // Location selection states
   const [countries, setCountries] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [countryInput, setCountryInput] = useState("");
-  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const [countrySearchInput, setCountrySearchInput] = useState("");
   const [currentCountryPage, setCurrentCountryPage] = useState(1);
   const countriesPerPage = 10;
 
@@ -104,7 +102,6 @@ export function CreateProject() {
         if (d.serviceType) setServiceType(d.serviceType);
         if (d.projectName) setProjectName(d.projectName);
         if (typeof d.wantImages === "boolean") setWantImages(d.wantImages);
-        if (typeof d.createPages === "boolean") setCreatePages(d.createPages);
       } catch { }
     }
   }, [draftKey]);
@@ -112,9 +109,9 @@ export function CreateProject() {
   useEffect(() => {
     localStorage.setItem(
       `createProjectDraft:${draftKey}`,
-      JSON.stringify({ serviceType, projectName, wantImages, createPages, projectId })
+      JSON.stringify({ serviceType, projectName, wantImages, projectId })
     );
-  }, [serviceType, projectName, wantImages, createPages, projectId, draftKey]);
+  }, [serviceType, projectName, wantImages, projectId, draftKey]);
 
   useEffect(() => {
     console.log("Project Name Updated: ", projectName);
@@ -139,7 +136,7 @@ export function CreateProject() {
 
   // Filter countries based on search term
   const filteredCountries = countries.filter(country =>
-    country.toLowerCase().includes(countrySearchTerm.toLowerCase())
+    country.toLowerCase().includes(countrySearchInput.toLowerCase())
   );
 
   // Calculate pagination for countries
@@ -155,8 +152,7 @@ export function CreateProject() {
         userId: admin._id,
         serviceType,
         projectName,
-        wantImages: wantImages ? 1 : 0,
-        createPages: createPages ? 1 : 0
+        wantImages: wantImages ? 1 : 0
       };
 
       console.log("Project payload: ", payload);
@@ -167,8 +163,7 @@ export function CreateProject() {
         if (
           last.serviceType === serviceType &&
           last.projectName === projectName &&
-          last.wantImages === wantImages &&
-          last.createPages === createPages
+          last.wantImages === wantImages
         ) {
           setLoading(0);
           setStep(step + 1);
@@ -203,11 +198,11 @@ export function CreateProject() {
           setProjectId(newId);
           localStorage.setItem(
             `createProjectLastSubmitted:${newId}`,
-            JSON.stringify({ serviceType, projectName, wantImages, createPages })
+            JSON.stringify({ serviceType, projectName, wantImages })
           );
           localStorage.setItem(
             `createProjectDraft:${newId}`,
-            JSON.stringify({ serviceType, projectName, wantImages, createPages, projectId: newId })
+            JSON.stringify({ serviceType, projectName, wantImages, projectId: newId })
           );
           localStorage.removeItem("createProjectDraft:new");
           setLoading(0);
@@ -267,16 +262,33 @@ export function CreateProject() {
     }
   };
 
-  const handleCountryKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && countryInput.trim() !== '') {
-      if (!countries.includes(countryInput)) {
-        setCountries([...countries, countryInput]);
-        setSelectedCountries([...selectedCountries, countryInput]);
+  const handleCountrySearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && countrySearchInput.trim() !== '') {
+      const trimmedInput = countrySearchInput.trim();
+      
+      // Check if it's an exact match with existing countries (case insensitive)
+      const exactMatch = countries.find(country => 
+        country.toLowerCase() === trimmedInput.toLowerCase()
+      );
+      
+      if (exactMatch) {
+        // If exact match found, select it
+        if (!selectedCountries.includes(exactMatch)) {
+          setSelectedCountries([...selectedCountries, exactMatch]);
+          setCountryPageCreation({ ...countryPageCreation, [exactMatch]: false });
+        }
+      } else {
+        // If no exact match, add as custom country
+        setCountries([...countries, trimmedInput]);
+        setSelectedCountries([...selectedCountries, trimmedInput]);
+        setCountryPageCreation({ ...countryPageCreation, [trimmedInput]: false });
         // Initialize state input for this country
-        setStateInput({ ...stateInput, [countryInput]: "" });
-        setSelectedStates({ ...selectedStates, [countryInput]: [] });
+        setStateInput({ ...stateInput, [trimmedInput]: "" });
+        setSelectedStates({ ...selectedStates, [trimmedInput]: [] });
       }
-      setCountryInput('');
+      
+      setCountrySearchInput('');
+      setCurrentCountryPage(1); // Reset to first page
     }
   };
 
@@ -349,17 +361,13 @@ export function CreateProject() {
     }
   };
 
-  const toggleCountry = (country: string) => {
-    if (selectedCountries.includes(country)) {
-      setSelectedCountries(selectedCountries.filter(c => c !== country));
-      // Remove page creation setting when country is deselected
-      const updatedPageCreation = { ...countryPageCreation };
-      delete updatedPageCreation[country];
-      setCountryPageCreation(updatedPageCreation);
-    } else {
+  const selectCountryFromList = (country: string) => {
+    if (!selectedCountries.includes(country)) {
       setSelectedCountries([...selectedCountries, country]);
-      // Initialize page creation setting for new country
       setCountryPageCreation({ ...countryPageCreation, [country]: false });
+      // Initialize state input for this country
+      setStateInput({ ...stateInput, [country]: "" });
+      setSelectedStates({ ...selectedStates, [country]: [] });
     }
   };
 
@@ -402,6 +410,14 @@ export function CreateProject() {
 
   const selectAllCountries = () => {
     setSelectedCountries([...filteredCountries]);
+    // Initialize page creation for all selected countries
+    const newPageCreation = { ...countryPageCreation };
+    filteredCountries.forEach(country => {
+      if (!newPageCreation[country]) {
+        newPageCreation[country] = false;
+      }
+    });
+    setCountryPageCreation(newPageCreation);
   };
 
   const deselectAllCountries = () => {
@@ -441,6 +457,10 @@ export function CreateProject() {
   const removeCountry = (country: string) => {
     setSelectedCountries(selectedCountries.filter(c => c !== country));
     setCountries(countries.filter(c => c !== country));
+    // Remove page creation setting when country is removed
+    const updatedPageCreation = { ...countryPageCreation };
+    delete updatedPageCreation[country];
+    setCountryPageCreation(updatedPageCreation);
   };
 
   const removeState = (country: string, state: string) => {
@@ -494,10 +514,9 @@ export function CreateProject() {
     setProjectName("");
     setServiceType("");
     setWantImages(false);
-    setCreatePages(false);
     setCountries([]);
     setSelectedCountries([]);
-    setCountryInput("");
+    setCountrySearchInput("");
     setCountryPageCreation({});
     setStates({});
     setSelectedStates({});
@@ -545,19 +564,6 @@ export function CreateProject() {
                 Do you want images?
               </label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="createPages"
-                checked={createPages}
-                onCheckedChange={(checked) => setCreatePages(checked === true)}
-              />
-              <label
-                htmlFor="createPages"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Create pages for this project?
-              </label>
-            </div>
           </div>
         );
       case 2:
@@ -565,29 +571,25 @@ export function CreateProject() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Choose Countries</h3>
             <div className="space-y-4">
-              {/* Search for countries */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Search countries..."
-                  value={countrySearchTerm}
-                  onChange={(e) => {
-                    setCountrySearchTerm(e.target.value);
-                    setCurrentCountryPage(1);
-                  }}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Add custom country */}
+              {/* Combined search and add input */}
               <div className="space-y-2">
-                <Label>Add Custom Country</Label>
-                <Input
-                  placeholder="Type and press Enter to add countries"
-                  value={countryInput}
-                  onChange={(e) => setCountryInput(e.target.value)}
-                  onKeyDown={handleCountryKeyDown}
-                />
+                <Label>Search or Add Country</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Search existing countries or type new country name and press Enter"
+                    value={countrySearchInput}
+                    onChange={(e) => {
+                      setCountrySearchInput(e.target.value);
+                      setCurrentCountryPage(1);
+                    }}
+                    onKeyDown={handleCountrySearchKeyDown}
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Type to search existing countries or enter a new country name and press Enter to add it
+                </p>
               </div>
 
               <div className="flex space-x-2">
@@ -609,40 +611,23 @@ export function CreateProject() {
                 </Button>
               </div>
 
-              {/* Paginated countries list */}
+              {/* Countries list without checkboxes */}
               <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {currentCountries.map(country => (
-                    <div key={country} className="border p-3 rounded-md bg-gray-50">
+                    <div key={country} className="border p-3 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`country-${country}`}
-                            checked={selectedCountries.includes(country)}
-                            onCheckedChange={() => toggleCountry(country)}
-                          />
-                          <label
-                            htmlFor={`country-${country}`}
-                            className="text-sm font-medium leading-none cursor-pointer"
-                          >
-                            {country}
-                          </label>
-                        </div>
-                        {selectedCountries.includes(country) && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`page-${country}`}
-                              checked={countryPageCreation[country] || false}
-                              onCheckedChange={() => toggleCountryPageCreation(country)}
-                            />
-                            <label
-                              htmlFor={`page-${country}`}
-                              className="text-xs text-blue-600 cursor-pointer"
-                            >
-                              Create page for {country}
-                            </label>
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => selectCountryFromList(country)}
+                          className="flex-1 text-left text-sm font-medium cursor-pointer hover:text-blue-600"
+                          disabled={selectedCountries.includes(country)}
+                        >
+                          {country}
+                          {selectedCountries.includes(country) && (
+                            <span className="ml-2 text-green-600">✓ Selected</span>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -674,25 +659,42 @@ export function CreateProject() {
                 )}
               </div>
 
-              {/* Selected countries display */}
+              {/* Selected countries display with page creation option */}
               <div>
                 <h4 className="text-sm font-medium mb-2">Selected Countries ({selectedCountries.length})</h4>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedCountries.map(country => (
-                    <Badge key={country} variant="secondary" className="flex items-center gap-1">
-                      {country}
-                      {countryPageCreation[country] && (
-                        <span className="text-xs text-blue-600">(Page)</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeCountry(country)}
-                        className="text-xs"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
+                    <div key={country} className="flex items-center justify-between p-3 bg-white rounded border">
+                      <span className="font-medium">{country}</span>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`page-${country}`}
+                            checked={countryPageCreation[country] || false}
+                            onCheckedChange={() => toggleCountryPageCreation(country)}
+                          />
+                          <label
+                            htmlFor={`page-${country}`}
+                            className="text-xs text-blue-600 cursor-pointer"
+                          >
+                            Create page
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeCountry(country)}
+                          className="text-gray-500 hover:text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
+                  {selectedCountries.length === 0 && (
+                    <div className="text-center p-4 text-gray-500 text-sm">
+                      No countries selected yet
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -959,10 +961,6 @@ export function CreateProject() {
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Want Images</h4>
                   <p className="font-medium">{wantImages ? "Yes" : "No"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Create Pages</h4>
-                  <p className="font-medium">{createPages ? "Yes" : "No"}</p>
                 </div>
               </div>
 
