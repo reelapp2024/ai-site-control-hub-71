@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Check, ChevronRight, ChevronLeft, ClipboardList, Bot, Upload, Mail, Phone, MapPin } from "lucide-react";
+import { X, Check, ChevronRight, ChevronLeft, ClipboardList, Bot, Upload, Mail, Phone, MapPin, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,15 +22,9 @@ export function CreateProject() {
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [wantImages, setWantImages] = useState(false);
+  const [createPages, setCreatePages] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(0);
-
-
-
-
-
-
-
 
   const storedLastId = localStorage.getItem("lastCreateProjectId");
   const navProjectId = location.state?.projectId;
@@ -39,24 +33,13 @@ export function CreateProject() {
   const draftKey = projectId || "new";
   const lastSubKey = projectId ? `createProjectLastSubmitted:${projectId}` : null;
 
-
-
-
   // Location selection states
   const [countries, setCountries] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [countryInput, setCountryInput] = useState("");
-
-  const [states, setStates] = useState<{ [country: string]: string[] }>({});
-  const [selectedStates, setSelectedStates] = useState<{ [country: string]: string[] }>({});
-  const [stateInput, setStateInput] = useState<{ [country: string]: string }>({});
-
-  const [cities, setCities] = useState<{ [state: string]: string[] }>({});
-  const [selectedCities, setSelectedCities] = useState<{ [state: string]: string[] }>({});
-  const [cityInput, setCityInput] = useState<{ [state: string]: string }>({});
-
-  const [localAreas, setLocalAreas] = useState<{ [city: string]: string[] }>({});
-  const [localAreaInput, setLocalAreaInput] = useState<{ [city: string]: string }>({});
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const [currentCountryPage, setCurrentCountryPage] = useState(1);
+  const countriesPerPage = 10;
 
   // Service states
   const [showServicesDialog, setShowServicesDialog] = useState(false);
@@ -72,49 +55,47 @@ export function CreateProject() {
   const [showFinalSuccess, setShowFinalSuccess] = useState(false);
   const [redirectCounter, setRedirectCounter] = useState(7);
 
-useEffect(() => {
-  async function fetchCountries() {
-    try {
-      const token = localStorage.getItem("token");
-      // Replace with your real API endpoint!
-      const res = await httpFile.get("/fetch_countries", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Adjust path to your API response shape:
-      const countryList = res.data.data.map((item: any) => item.name); // or item.country, etc.
-      setCountries(countryList);
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch countries.",
-        variant: "destructive",
-      });
+  useEffect(() => {
+    async function fetchCountries() {
+      try {
+        const token = localStorage.getItem("token");
+        // Replace with your real API endpoint!
+        const res = await httpFile.get("/fetch_countries", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // Adjust path to your API response shape:
+        const countryList = res.data.data.map((item: any) => item.name); // or item.country, etc.
+        setCountries(countryList);
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch countries.",
+          variant: "destructive",
+        });
+      }
     }
-  }
-  fetchCountries();
-}, []);
+    fetchCountries();
+  }, []);
 
-   useEffect(() => {
-        const raw = localStorage.getItem(`createProjectDraft:${draftKey}`);
-        if (raw) {
-          try {
-            const d = JSON.parse(raw);
-            if (d.serviceType) setServiceType(d.serviceType);
-            if (d.projectName) setProjectName(d.projectName);
-            if (typeof d.wantImages === "boolean") setWantImages(d.wantImages);
-          } catch { }
-        }
-      }, [draftKey]);
+  useEffect(() => {
+    const raw = localStorage.getItem(`createProjectDraft:${draftKey}`);
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        if (d.serviceType) setServiceType(d.serviceType);
+        if (d.projectName) setProjectName(d.projectName);
+        if (typeof d.wantImages === "boolean") setWantImages(d.wantImages);
+        if (typeof d.createPages === "boolean") setCreatePages(d.createPages);
+      } catch { }
+    }
+  }, [draftKey]);
 
-      useEffect(() => {
-        localStorage.setItem(
-          `createProjectDraft:${draftKey}`,
-          JSON.stringify({ serviceType, projectName, wantImages, projectId })
-        );
-      }, [serviceType, projectName, wantImages, projectId, draftKey]);
-
-
-
+  useEffect(() => {
+    localStorage.setItem(
+      `createProjectDraft:${draftKey}`,
+      JSON.stringify({ serviceType, projectName, wantImages, createPages, projectId })
+    );
+  }, [serviceType, projectName, wantImages, createPages, projectId, draftKey]);
 
   useEffect(() => {
     console.log("Project Name Updated: ", projectName);
@@ -137,42 +118,43 @@ useEffect(() => {
     }
   }, [showFinalSuccess, redirectCounter, navigate]);
 
+  // Filter countries based on search term
+  const filteredCountries = countries.filter(country =>
+    country.toLowerCase().includes(countrySearchTerm.toLowerCase())
+  );
+
+  // Calculate pagination for countries
+  const indexOfLastCountry = currentCountryPage * countriesPerPage;
+  const indexOfFirstCountry = indexOfLastCountry - countriesPerPage;
+  const currentCountries = filteredCountries.slice(indexOfFirstCountry, indexOfLastCountry);
+  const totalCountryPages = Math.ceil(filteredCountries.length / countriesPerPage);
+
   const handleNextStep = async () => {
-
-
-
     if (step === 1) {
-
-
-     
       const admin = JSON.parse(localStorage.getItem("adminProfile") || "{}");
       const payload = {
         userId: admin._id,
         serviceType,
         projectName,
-        wantImages: wantImages ? 1 : 0
+        wantImages: wantImages ? 1 : 0,
+        createPages: createPages ? 1 : 0
       };
 
-      // Log values to confirm they are being captured correctly
       console.log("Project payload: ", payload);
-
       setLoading(1);
 
-
-       if (projectId && lastSubKey) {
-      const last = JSON.parse(localStorage.getItem(lastSubKey) || "{}");
-      if (
-        last.serviceType === serviceType &&
-        last.projectName === projectName &&
-        last.wantImages === wantImages
-      ) {
-
-      setLoading(0);
-
-         setStep(step + 1);
+      if (projectId && lastSubKey) {
+        const last = JSON.parse(localStorage.getItem(lastSubKey) || "{}");
+        if (
+          last.serviceType === serviceType &&
+          last.projectName === projectName &&
+          last.wantImages === wantImages &&
+          last.createPages === createPages
+        ) {
+          setLoading(0);
+          setStep(step + 1);
+        }
       }
-    }
-
 
       try {
         const token = localStorage.getItem("token");
@@ -181,7 +163,6 @@ useEffect(() => {
         });
 
         if (res.status === 401) {
-
           toast({
             title: "Error",
             description: "invalid token",
@@ -203,34 +184,28 @@ useEffect(() => {
           setProjectId(newId);
           localStorage.setItem(
             `createProjectLastSubmitted:${newId}`,
-            JSON.stringify({ serviceType, projectName, wantImages })
+            JSON.stringify({ serviceType, projectName, wantImages, createPages })
           );
           localStorage.setItem(
             `createProjectDraft:${newId}`,
-            JSON.stringify({ serviceType, projectName, wantImages, projectId: newId })
+            JSON.stringify({ serviceType, projectName, wantImages, createPages, projectId: newId })
           );
           localStorage.removeItem("createProjectDraft:new");
           setLoading(0);
 
           setStep(step + 1);
-
         }
       } catch (err: any) {
-
         toast({
           title: "Error",
           description: err.response?.data?.message || "An error occurred!",
           variant: "destructive"
         });
-
       } finally {
         setLoading(0);
-
       }
 
       if (!projectName || !serviceType) return;
-
-
     } else if (step === 2) {
       setStep(step + 1);
     } else if (step === 3) {
@@ -394,7 +369,7 @@ useEffect(() => {
   };
 
   const selectAllCountries = () => {
-    setSelectedCountries([...countries]);
+    setSelectedCountries([...filteredCountries]);
   };
 
   const deselectAllCountries = () => {
@@ -487,6 +462,7 @@ useEffect(() => {
     setProjectName("");
     setServiceType("");
     setWantImages(false);
+    setCreatePages(false);
     setCountries([]);
     setSelectedCountries([]);
     setCountryInput("");
@@ -536,6 +512,19 @@ useEffect(() => {
                 Do you want images?
               </label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="createPages"
+                checked={createPages}
+                onCheckedChange={(checked) => setCreatePages(checked === true)}
+              />
+              <label
+                htmlFor="createPages"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Create pages for selected locations?
+              </label>
+            </div>
           </div>
         );
       case 2:
@@ -543,7 +532,23 @@ useEffect(() => {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Choose Countries</h3>
             <div className="space-y-4">
-              <div className="flex space-x-2">
+              {/* Search for countries */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search countries..."
+                  value={countrySearchTerm}
+                  onChange={(e) => {
+                    setCountrySearchTerm(e.target.value);
+                    setCurrentCountryPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Add custom country */}
+              <div className="space-y-2">
+                <Label>Add Custom Country</Label>
                 <Input
                   placeholder="Type and press Enter to add countries"
                   value={countryInput}
@@ -559,7 +564,7 @@ useEffect(() => {
                   size="sm"
                   onClick={selectAllCountries}
                 >
-                  Select All
+                  Select All ({filteredCountries.length})
                 </Button>
                 <Button
                   type="button"
@@ -571,36 +576,56 @@ useEffect(() => {
                 </Button>
               </div>
 
-              {/* Sample countries */}
-              <div className="grid grid-cols-2 gap-2">
-                {countries.map(country => (
-                  <div key={country} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`country-${country}`}
-                      checked={countries.includes(country) && selectedCountries.includes(country)}
-                      onCheckedChange={() => {
-                        if (!countries.includes(country)) {
-                          setCountries([...countries, country]);
-                          setSelectedCountries([...selectedCountries, country]);
-                          setStateInput({ ...stateInput, [country]: "" });
-                        } else {
-                          toggleCountry(country);
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor={`country-${country}`}
-                      className="text-sm font-medium leading-none"
+              {/* Paginated countries list */}
+              <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2">
+                  {currentCountries.map(country => (
+                    <div key={country} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`country-${country}`}
+                        checked={selectedCountries.includes(country)}
+                        onCheckedChange={() => toggleCountry(country)}
+                      />
+                      <label
+                        htmlFor={`country-${country}`}
+                        className="text-sm font-medium leading-none cursor-pointer"
+                      >
+                        {country}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalCountryPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentCountryPage(Math.max(1, currentCountryPage - 1))}
+                      disabled={currentCountryPage === 1}
                     >
-                      {country}
-                    </label>
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentCountryPage} of {totalCountryPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentCountryPage(Math.min(totalCountryPages, currentCountryPage + 1))}
+                      disabled={currentCountryPage === totalCountryPages}
+                    >
+                      Next
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
 
+              {/* Selected countries display */}
               <div>
-                <h4 className="text-sm font-medium mb-2">Selected Countries</h4>
-                <div className="flex flex-wrap gap-2">
+                <h4 className="text-sm font-medium mb-2">Selected Countries ({selectedCountries.length})</h4>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                   {selectedCountries.map(country => (
                     <Badge key={country} variant="secondary" className="flex items-center gap-1">
                       {country}
@@ -872,6 +897,17 @@ useEffect(() => {
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Service Type</h4>
                   <p className="font-medium">{serviceType}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Want Images</h4>
+                  <p className="font-medium">{wantImages ? "Yes" : "No"}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Create Pages</h4>
+                  <p className="font-medium">{createPages ? "Yes" : "No"}</p>
                 </div>
               </div>
 
@@ -1162,7 +1198,6 @@ useEffect(() => {
               <Button
                 type="button"
                 onClick={handleNextStep}
-                // onClick={step === 1 ? handleCompletedFirstStep : handleNextStep}
                 disabled={(loading === 1)}
               >
                 {step < 8 ? (
