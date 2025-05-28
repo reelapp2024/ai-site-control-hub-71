@@ -1,3 +1,4 @@
+
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -41,6 +42,20 @@ export function CreateProject() {
   const [currentCountryPage, setCurrentCountryPage] = useState(1);
   const countriesPerPage = 10;
 
+  // States management
+  const [states, setStates] = useState<{[country: string]: string[]}>({});
+  const [selectedStates, setSelectedStates] = useState<{[country: string]: string[]}>({});
+  const [stateInput, setStateInput] = useState<{[country: string]: string}>({});
+
+  // Cities management
+  const [cities, setCities] = useState<{[state: string]: string[]}>({});
+  const [selectedCities, setSelectedCities] = useState<{[state: string]: string[]}>({});
+  const [cityInput, setCityInput] = useState<{[state: string]: string}>({});
+
+  // Local areas management
+  const [localAreas, setLocalAreas] = useState<{[city: string]: string[]}>({});
+  const [localAreaInput, setLocalAreaInput] = useState<{[city: string]: string}>({});
+
   // Service states
   const [showServicesDialog, setShowServicesDialog] = useState(false);
   const [serviceOption, setServiceOption] = useState<"manual" | "ai" | "">("");
@@ -54,6 +69,9 @@ export function CreateProject() {
   // Final success state
   const [showFinalSuccess, setShowFinalSuccess] = useState(false);
   const [redirectCounter, setRedirectCounter] = useState(7);
+
+  // Page creation option
+  const [createPagesForLocations, setCreatePagesForLocations] = useState(false);
 
   useEffect(() => {
     async function fetchCountries() {
@@ -576,6 +594,26 @@ export function CreateProject() {
                 </Button>
               </div>
 
+              {/* Page creation option for countries */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="createPagesForLocations"
+                    checked={createPagesForLocations}
+                    onCheckedChange={(checked) => setCreatePagesForLocations(checked === true)}
+                  />
+                  <label
+                    htmlFor="createPagesForLocations"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Create individual pages for each selected location
+                  </label>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  When enabled, a separate page will be created for each country, state, city, and local area you select.
+                </p>
+              </div>
+
               {/* Paginated countries list */}
               <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-2">
@@ -909,6 +947,11 @@ export function CreateProject() {
                   <h4 className="text-sm font-medium text-gray-500">Create Pages</h4>
                   <p className="font-medium">{createPages ? "Yes" : "No"}</p>
                 </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500">Create Pages for Locations</h4>
+                <p className="font-medium">{createPagesForLocations ? "Yes" : "No"}</p>
               </div>
 
               <div>
