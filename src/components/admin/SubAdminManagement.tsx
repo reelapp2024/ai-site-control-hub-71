@@ -1,36 +1,31 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { httpFile } from "../../config.js";
 
 type SubAdmin = {
-  id: number;
+  id: number | string;
   fullName: string;
-  location: string;
+  address: string;
   email: string;
   phone: string;
   type: string;
 };
 
-const INITIAL_SUBADMINS: SubAdmin[] = [
-  {
-    id: 1,
-    fullName: "sony xperia",
-    location: "Xperia",
-    email: "sony@xperia.com",
-    phone: "7856341234",
-    type: "0",
-  },
-];
-
 export function SubAdminManagement() {
   const [view, setView] = useState<"list" | "add">("list");
-  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>(INITIAL_SUBADMINS);
+  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [page, setPage] = useState(0); // 0-based for frontend
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalSubAdmins, setTotalSubAdmins] = useState(0);
+  const navigate = useNavigate();
+
   // Form state for adding new sub-admin
   const [formData, setFormData] = useState({
     fullName: "",
@@ -40,19 +35,77 @@ export function SubAdminManagement() {
     address: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  // Fetch SubAdmins from API
+  const fetchSubAdmins = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await httpFile.get(`/fetch_users?page=${page + 1}&limit=${rowsPerPage}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        toast({
+          title: "Error",
+          description: "Invalid token",
+          variant: "destructive",
+        });
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
+      setSubAdmins(
+        (response.data.data || []).map((item: any, idx: number) => ({
+          id: item.id || item._id || idx + 1,
+          fullName: item.fullName,
+          address: item.address || "",
+          email: item.email,
+          phone: item.phone,
+          type: item.type?.toString() || "0",
+        }))
+      );
+      setTotalPages(response.data.pagination?.totalPages || 1);
+      setTotalSubAdmins(response.data.pagination?.totalUsers || 0);
+    } catch (error: any) {
+      if (error.response && error.response.status === 401) {
+        toast({
+          title: "Error",
+          description: "Token is not valid",
+          variant: "destructive",
+        });
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch SubAdmin data",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchSubAdmins();
+    // eslint-disable-next-line
+  }, [page, rowsPerPage]);
+
+  // Add SubAdmin local handler (does not call backend - you can update it if you have an API for adding)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Simple validation
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.password || !formData.address) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -61,19 +114,69 @@ export function SubAdminManagement() {
       return;
     }
 
-    // Add new sub-admin
+
+
+
+
+
+    try {
+      // const res = await httpFile.post("create_user", formData);
+      const token = localStorage.getItem("token");
+
+      const res = await httpFile.post('/create_user', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        toast({
+          title: "Error",
+          description: "Invalid Token",
+          variant: "destructive",
+        });
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
+      console.log(res, "res from backend");
+
+      if (res.status === 201) {
+        toast({
+          title: "Success",
+          description: "Sub Admin created successfully!",
+        });
+
+
+         setView("list");
+  // REFRESH the list
+  fetchSubAdmins();
+        // navigate("/admin/SubAdmin_listing");
+      }
+    } catch (err) {
+      const error = err.response?.data?.message || "An error occurred!";
+      toast({
+        title: "Error",
+        description: err,
+        variant: "destructive",
+      });
+
+
+    }
+
+    // (Optional: Call backend API to add SubAdmin here)
+    // For now, add locally:
     const newSubAdmin: SubAdmin = {
-      id: subAdmins.length + 1,
+      id: Date.now(),
       fullName: formData.fullName,
-      location: formData.address,
+      address: formData.address,
       email: formData.email,
       phone: formData.phone,
       type: "0",
     };
 
     setSubAdmins([...subAdmins, newSubAdmin]);
-    
-    // Reset form and go back to list view
     setFormData({
       fullName: "",
       email: "",
@@ -81,20 +184,20 @@ export function SubAdminManagement() {
       password: "",
       address: "",
     });
-    
     toast({
       title: "Success",
       description: "Sub Admin created successfully!",
     });
-    
     setView("list");
   };
 
+  // Client-side search
   const filteredSubAdmins = subAdmins.filter(
     (subAdmin) =>
-      subAdmin.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subAdmin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subAdmin.phone.includes(searchTerm)
+      subAdmin.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subAdmin.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subAdmin.phone?.includes(searchTerm) ||
+      subAdmin.address?.includes(searchTerm)
   );
 
   if (view === "add") {
@@ -102,8 +205,8 @@ export function SubAdminManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Add SubAdmin</h1>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setView("list")}
           >
             Back to List
@@ -138,7 +241,6 @@ export function SubAdminManagement() {
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-6">Add SubAdmin</h2>
-          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -153,7 +255,6 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
               <div className="space-y-2">
                 <label htmlFor="email" className="block text-sm font-medium">
                   E-Mail
@@ -167,7 +268,6 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
               <div className="space-y-2">
                 <label htmlFor="phone" className="block text-sm font-medium">
                   Phone
@@ -180,7 +280,6 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-sm font-medium">
                   Password
@@ -194,7 +293,6 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
               <div className="space-y-2 md:col-span-2">
                 <label htmlFor="address" className="block text-sm font-medium">
                   Address
@@ -208,11 +306,10 @@ export function SubAdminManagement() {
                 />
               </div>
             </div>
-            
             <div className="flex justify-end pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="mr-2"
                 onClick={() => setView("list")}
               >
@@ -232,7 +329,7 @@ export function SubAdminManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage SubAdmin</h1>
-        <Button 
+        <Button
           onClick={() => setView("add")}
         >
           Add SubAdmin
@@ -252,7 +349,7 @@ export function SubAdminManagement() {
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -267,11 +364,11 @@ export function SubAdminManagement() {
             </TableHeader>
             <TableBody>
               {filteredSubAdmins.length > 0 ? (
-                filteredSubAdmins.map((subAdmin) => (
+                filteredSubAdmins.map((subAdmin, idx) => (
                   <TableRow key={subAdmin.id}>
-                    <TableCell>{subAdmin.id}</TableCell>
+                    <TableCell>{page * rowsPerPage + idx + 1}</TableCell>
                     <TableCell>{subAdmin.fullName}</TableCell>
-                    <TableCell>{subAdmin.location}</TableCell>
+                    <TableCell>{subAdmin.address}</TableCell>
                     <TableCell>{subAdmin.email}</TableCell>
                     <TableCell>{subAdmin.phone}</TableCell>
                     <TableCell>{subAdmin.type}</TableCell>
@@ -286,6 +383,31 @@ export function SubAdminManagement() {
               )}
             </TableBody>
           </Table>
+        </div>
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center my-4">
+          <div>
+            Page {page + 1} of {totalPages}
+            {" | "}
+            Total: {totalSubAdmins}
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="mr-2"
+            >
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              disabled={page + 1 >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>

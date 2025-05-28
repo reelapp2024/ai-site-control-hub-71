@@ -12,48 +12,117 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { toast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { httpFile } from "../../config.js";
 
 export function CreateProject() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [wantImages, setWantImages] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  
+  const [loading, setLoading] = useState(0);
+
+
+
+
+
+
+
+
+  const storedLastId = localStorage.getItem("lastCreateProjectId");
+  const navProjectId = location.state?.projectId;
+  const [projectId, setProjectId] = useState(navProjectId || storedLastId || null);
+
+  const draftKey = projectId || "new";
+  const lastSubKey = projectId ? `createProjectLastSubmitted:${projectId}` : null;
+
+
+
+
   // Location selection states
   const [countries, setCountries] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [countryInput, setCountryInput] = useState("");
-  
-  const [states, setStates] = useState<{[country: string]: string[]}>({});
-  const [selectedStates, setSelectedStates] = useState<{[country: string]: string[]}>({});
-  const [stateInput, setStateInput] = useState<{[country: string]: string}>({});
-  
-  const [cities, setCities] = useState<{[state: string]: string[]}>({});
-  const [selectedCities, setSelectedCities] = useState<{[state: string]: string[]}>({});
-  const [cityInput, setCityInput] = useState<{[state: string]: string}>({});
-  
-  const [localAreas, setLocalAreas] = useState<{[city: string]: string[]}>({});
-  const [localAreaInput, setLocalAreaInput] = useState<{[city: string]: string}>({});
-  
+
+  const [states, setStates] = useState<{ [country: string]: string[] }>({});
+  const [selectedStates, setSelectedStates] = useState<{ [country: string]: string[] }>({});
+  const [stateInput, setStateInput] = useState<{ [country: string]: string }>({});
+
+  const [cities, setCities] = useState<{ [state: string]: string[] }>({});
+  const [selectedCities, setSelectedCities] = useState<{ [state: string]: string[] }>({});
+  const [cityInput, setCityInput] = useState<{ [state: string]: string }>({});
+
+  const [localAreas, setLocalAreas] = useState<{ [city: string]: string[] }>({});
+  const [localAreaInput, setLocalAreaInput] = useState<{ [city: string]: string }>({});
+
   // Service states
   const [showServicesDialog, setShowServicesDialog] = useState(false);
   const [serviceOption, setServiceOption] = useState<"manual" | "ai" | "">("");
   const [serviceNames, setServiceNames] = useState("");
-  
+
   // About Us states
   const [aboutUsEmail, setAboutUsEmail] = useState("");
   const [aboutUsPhone, setAboutUsPhone] = useState("");
   const [aboutUsLocation, setAboutUsLocation] = useState("");
-  
+
   // Final success state
   const [showFinalSuccess, setShowFinalSuccess] = useState(false);
   const [redirectCounter, setRedirectCounter] = useState(7);
-  
-  // Sample data - in a real app, these would come from an API
-  const sampleCountries = ["United States", "Canada", "United Kingdom", "Australia", "Germany", "France"];
+
+useEffect(() => {
+  async function fetchCountries() {
+    try {
+      const token = localStorage.getItem("token");
+      // Replace with your real API endpoint!
+      const res = await httpFile.get("/fetch_countries", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Adjust path to your API response shape:
+      const countryList = res.data.data.map((item: any) => item.name); // or item.country, etc.
+      setCountries(countryList);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch countries.",
+        variant: "destructive",
+      });
+    }
+  }
+  fetchCountries();
+}, []);
+
+   useEffect(() => {
+        const raw = localStorage.getItem(`createProjectDraft:${draftKey}`);
+        if (raw) {
+          try {
+            const d = JSON.parse(raw);
+            if (d.serviceType) setServiceType(d.serviceType);
+            if (d.projectName) setProjectName(d.projectName);
+            if (typeof d.wantImages === "boolean") setWantImages(d.wantImages);
+          } catch { }
+        }
+      }, [draftKey]);
+
+      useEffect(() => {
+        localStorage.setItem(
+          `createProjectDraft:${draftKey}`,
+          JSON.stringify({ serviceType, projectName, wantImages, projectId })
+        );
+      }, [serviceType, projectName, wantImages, projectId, draftKey]);
+
+
+
+
+  useEffect(() => {
+    console.log("Project Name Updated: ", projectName);
+  }, [projectName]);
+
+  useEffect(() => {
+    console.log("Service Type Updated: ", serviceType);
+  }, [serviceType]);
 
   // Redirect countdown effect
   useEffect(() => {
@@ -61,17 +130,107 @@ export function CreateProject() {
       const timer = setTimeout(() => {
         setRedirectCounter(redirectCounter - 1);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     } else if (showFinalSuccess && redirectCounter === 0) {
       navigate("/");
     }
   }, [showFinalSuccess, redirectCounter, navigate]);
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
+
+
+
     if (step === 1) {
+
+
+     
+      const admin = JSON.parse(localStorage.getItem("adminProfile") || "{}");
+      const payload = {
+        userId: admin._id,
+        serviceType,
+        projectName,
+        wantImages: wantImages ? 1 : 0
+      };
+
+      // Log values to confirm they are being captured correctly
+      console.log("Project payload: ", payload);
+
+      setLoading(1);
+
+
+       if (projectId && lastSubKey) {
+      const last = JSON.parse(localStorage.getItem(lastSubKey) || "{}");
+      if (
+        last.serviceType === serviceType &&
+        last.projectName === projectName &&
+        last.wantImages === wantImages
+      ) {
+
+      setLoading(0);
+
+         setStep(step + 1);
+      }
+    }
+
+
+      try {
+        const token = localStorage.getItem("token");
+        const res = await httpFile.post("/createProject", payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+
+          toast({
+            title: "Error",
+            description: "invalid token",
+            variant: "destructive"
+          });
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
+        if (res.status === 201) {
+          const newId = res.data.data._id;
+
+          toast({
+            title: "Success",
+            description: "Project created successfully!",
+            variant: "destructive"
+          });
+
+          localStorage.setItem("lastCreateProjectId", newId);
+          setProjectId(newId);
+          localStorage.setItem(
+            `createProjectLastSubmitted:${newId}`,
+            JSON.stringify({ serviceType, projectName, wantImages })
+          );
+          localStorage.setItem(
+            `createProjectDraft:${newId}`,
+            JSON.stringify({ serviceType, projectName, wantImages, projectId: newId })
+          );
+          localStorage.removeItem("createProjectDraft:new");
+          setLoading(0);
+
+          setStep(step + 1);
+
+        }
+      } catch (err: any) {
+
+        toast({
+          title: "Error",
+          description: err.response?.data?.message || "An error occurred!",
+          variant: "destructive"
+        });
+
+      } finally {
+        setLoading(0);
+
+      }
+
       if (!projectName || !serviceType) return;
-      setStep(step + 1);
+
+
     } else if (step === 2) {
       setStep(step + 1);
     } else if (step === 3) {
@@ -120,8 +279,8 @@ export function CreateProject() {
         setCountries([...countries, countryInput]);
         setSelectedCountries([...selectedCountries, countryInput]);
         // Initialize state input for this country
-        setStateInput({...stateInput, [countryInput]: ""});
-        setSelectedStates({...selectedStates, [countryInput]: []});
+        setStateInput({ ...stateInput, [countryInput]: "" });
+        setSelectedStates({ ...selectedStates, [countryInput]: [] });
       }
       setCountryInput('');
     }
@@ -130,61 +289,61 @@ export function CreateProject() {
   const handleStateKeyDown = (country: string, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && stateInput[country]?.trim() !== '') {
       const newState = stateInput[country];
-      const updatedStates = {...states};
+      const updatedStates = { ...states };
       if (!updatedStates[country]) {
         updatedStates[country] = [];
       }
       if (!updatedStates[country].includes(newState)) {
         updatedStates[country] = [...updatedStates[country], newState];
-        
+
         // Add to selected states
-        const updatedSelectedStates = {...selectedStates};
+        const updatedSelectedStates = { ...selectedStates };
         if (!updatedSelectedStates[country]) {
           updatedSelectedStates[country] = [];
         }
         updatedSelectedStates[country] = [...updatedSelectedStates[country], newState];
         setSelectedStates(updatedSelectedStates);
-        
+
         // Initialize city input for this state
-        setCityInput({...cityInput, [newState]: ""});
-        setSelectedCities({...selectedCities, [newState]: []});
+        setCityInput({ ...cityInput, [newState]: "" });
+        setSelectedCities({ ...selectedCities, [newState]: [] });
       }
       setStates(updatedStates);
-      setStateInput({...stateInput, [country]: ""});
+      setStateInput({ ...stateInput, [country]: "" });
     }
   };
 
   const handleCityKeyDown = (state: string, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && cityInput[state]?.trim() !== '') {
       const newCity = cityInput[state];
-      const updatedCities = {...cities};
+      const updatedCities = { ...cities };
       if (!updatedCities[state]) {
         updatedCities[state] = [];
       }
       if (!updatedCities[state].includes(newCity)) {
         updatedCities[state] = [...updatedCities[state], newCity];
-        
+
         // Add to selected cities
-        const updatedSelectedCities = {...selectedCities};
+        const updatedSelectedCities = { ...selectedCities };
         if (!updatedSelectedCities[state]) {
           updatedSelectedCities[state] = [];
         }
         updatedSelectedCities[state] = [...updatedSelectedCities[state], newCity];
         setSelectedCities(updatedSelectedCities);
-        
+
         // Initialize local area input for this city
-        setLocalAreaInput({...localAreaInput, [newCity]: ""});
-        setLocalAreas({...localAreas, [newCity]: []});
+        setLocalAreaInput({ ...localAreaInput, [newCity]: "" });
+        setLocalAreas({ ...localAreas, [newCity]: [] });
       }
       setCities(updatedCities);
-      setCityInput({...cityInput, [state]: ""});
+      setCityInput({ ...cityInput, [state]: "" });
     }
   };
 
   const handleLocalAreaKeyDown = (city: string, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && localAreaInput[city]?.trim() !== '') {
       const newLocalArea = localAreaInput[city];
-      const updatedLocalAreas = {...localAreas};
+      const updatedLocalAreas = { ...localAreas };
       if (!updatedLocalAreas[city]) {
         updatedLocalAreas[city] = [];
       }
@@ -192,7 +351,7 @@ export function CreateProject() {
         updatedLocalAreas[city] = [...updatedLocalAreas[city], newLocalArea];
       }
       setLocalAreas(updatedLocalAreas);
-      setLocalAreaInput({...localAreaInput, [city]: ""});
+      setLocalAreaInput({ ...localAreaInput, [city]: "" });
     }
   };
 
@@ -205,32 +364,32 @@ export function CreateProject() {
   };
 
   const toggleState = (country: string, state: string) => {
-    const updatedSelectedStates = {...selectedStates};
+    const updatedSelectedStates = { ...selectedStates };
     if (!updatedSelectedStates[country]) {
       updatedSelectedStates[country] = [];
     }
-    
+
     if (updatedSelectedStates[country].includes(state)) {
       updatedSelectedStates[country] = updatedSelectedStates[country].filter(s => s !== state);
     } else {
       updatedSelectedStates[country] = [...updatedSelectedStates[country], state];
     }
-    
+
     setSelectedStates(updatedSelectedStates);
   };
 
   const toggleCity = (state: string, city: string) => {
-    const updatedSelectedCities = {...selectedCities};
+    const updatedSelectedCities = { ...selectedCities };
     if (!updatedSelectedCities[state]) {
       updatedSelectedCities[state] = [];
     }
-    
+
     if (updatedSelectedCities[state].includes(city)) {
       updatedSelectedCities[state] = updatedSelectedCities[state].filter(c => c !== city);
     } else {
       updatedSelectedCities[state] = [...updatedSelectedCities[state], city];
     }
-    
+
     setSelectedCities(updatedSelectedCities);
   };
 
@@ -243,31 +402,31 @@ export function CreateProject() {
   };
 
   const selectAllStates = (country: string) => {
-    const updatedSelectedStates = {...selectedStates};
+    const updatedSelectedStates = { ...selectedStates };
     updatedSelectedStates[country] = [...(states[country] || [])];
     setSelectedStates(updatedSelectedStates);
   };
 
   const deselectAllStates = (country: string) => {
-    const updatedSelectedStates = {...selectedStates};
+    const updatedSelectedStates = { ...selectedStates };
     updatedSelectedStates[country] = [];
     setSelectedStates(updatedSelectedStates);
   };
 
   const selectAllCities = (state: string) => {
-    const updatedSelectedCities = {...selectedCities};
+    const updatedSelectedCities = { ...selectedCities };
     updatedSelectedCities[state] = [...(cities[state] || [])];
     setSelectedCities(updatedSelectedCities);
   };
 
   const deselectAllCities = (state: string) => {
-    const updatedSelectedCities = {...selectedCities};
+    const updatedSelectedCities = { ...selectedCities };
     updatedSelectedCities[state] = [];
     setSelectedCities(updatedSelectedCities);
   };
 
   const removeLocalArea = (city: string, area: string) => {
-    const updatedLocalAreas = {...localAreas};
+    const updatedLocalAreas = { ...localAreas };
     updatedLocalAreas[city] = updatedLocalAreas[city].filter(a => a !== area);
     setLocalAreas(updatedLocalAreas);
   };
@@ -278,21 +437,21 @@ export function CreateProject() {
   };
 
   const removeState = (country: string, state: string) => {
-    const updatedStates = {...states};
+    const updatedStates = { ...states };
     updatedStates[country] = updatedStates[country].filter(s => s !== state);
     setStates(updatedStates);
-    
-    const updatedSelectedStates = {...selectedStates};
+
+    const updatedSelectedStates = { ...selectedStates };
     updatedSelectedStates[country] = updatedSelectedStates[country].filter(s => s !== state);
     setSelectedStates(updatedSelectedStates);
   };
 
   const removeCity = (state: string, city: string) => {
-    const updatedCities = {...cities};
+    const updatedCities = { ...cities };
     updatedCities[state] = updatedCities[state].filter(c => c !== city);
     setCities(updatedCities);
-    
-    const updatedSelectedCities = {...selectedCities};
+
+    const updatedSelectedCities = { ...selectedCities };
     updatedSelectedCities[state] = updatedSelectedCities[state].filter(c => c !== city);
     setSelectedCities(updatedSelectedCities);
   };
@@ -313,7 +472,7 @@ export function CreateProject() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    
+
     if (file) {
       // In a real app, you would process the file here
       // For demo purposes, we'll just show a success message
@@ -342,7 +501,7 @@ export function CreateProject() {
   };
 
   const renderStep = () => {
-    switch(step) {
+    switch (step) {
       case 1:
         return (
           <div className="space-y-6">
@@ -365,8 +524,8 @@ export function CreateProject() {
               />
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="wantImages" 
+              <Checkbox
+                id="wantImages"
                 checked={wantImages}
                 onCheckedChange={(checked) => setWantImages(checked === true)}
               />
@@ -392,19 +551,19 @@ export function CreateProject() {
                   onKeyDown={handleCountryKeyDown}
                 />
               </div>
-              
+
               <div className="flex space-x-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   size="sm"
                   onClick={selectAllCountries}
                 >
                   Select All
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   size="sm"
                   onClick={deselectAllCountries}
                 >
@@ -414,16 +573,16 @@ export function CreateProject() {
 
               {/* Sample countries */}
               <div className="grid grid-cols-2 gap-2">
-                {sampleCountries.map(country => (
+                {countries.map(country => (
                   <div key={country} className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id={`country-${country}`}
                       checked={countries.includes(country) && selectedCountries.includes(country)}
                       onCheckedChange={() => {
                         if (!countries.includes(country)) {
                           setCountries([...countries, country]);
                           setSelectedCountries([...selectedCountries, country]);
-                          setStateInput({...stateInput, [country]: ""});
+                          setStateInput({ ...stateInput, [country]: "" });
                         } else {
                           toggleCountry(country);
                         }
@@ -438,15 +597,15 @@ export function CreateProject() {
                   </div>
                 ))}
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium mb-2">Selected Countries</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedCountries.map(country => (
                     <Badge key={country} variant="secondary" className="flex items-center gap-1">
                       {country}
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => removeCountry(country)}
                         className="text-xs"
                       >
@@ -471,23 +630,23 @@ export function CreateProject() {
                     <Input
                       placeholder={`Type state name for ${country} and press Enter`}
                       value={stateInput[country] || ""}
-                      onChange={(e) => setStateInput({...stateInput, [country]: e.target.value})}
+                      onChange={(e) => setStateInput({ ...stateInput, [country]: e.target.value })}
                       onKeyDown={(e) => handleStateKeyDown(country, e)}
                     />
                   </div>
-                  
+
                   <div className="flex space-x-2 mb-3">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => selectAllStates(country)}
                     >
                       Select All
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={() => deselectAllStates(country)}
                     >
@@ -523,7 +682,7 @@ export function CreateProject() {
                   ) : (
                     <div className="text-sm text-gray-500 mb-2">No states added yet</div>
                   )}
-                  
+
                   {/* Selected states */}
                   <div>
                     <h5 className="text-xs font-medium mb-1 text-gray-500">Selected States</h5>
@@ -540,7 +699,7 @@ export function CreateProject() {
                   </div>
                 </div>
               ))}
-              
+
               {selectedCountries.length === 0 && (
                 <div className="text-center p-6 border border-dashed rounded-md">
                   <p className="text-gray-500">No countries selected. Please go back and select countries first.</p>
@@ -554,7 +713,7 @@ export function CreateProject() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Choose Cities</h3>
             <div className="space-y-6">
-              {Object.entries(selectedStates).flatMap(([country, statesList]) => 
+              {Object.entries(selectedStates).flatMap(([country, statesList]) =>
                 statesList.map(state => (
                   <div key={state} className="border p-4 rounded-md">
                     <h4 className="font-medium mb-1">{state}</h4>
@@ -563,23 +722,23 @@ export function CreateProject() {
                       <Input
                         placeholder={`Type city name for ${state} and press Enter`}
                         value={cityInput[state] || ""}
-                        onChange={(e) => setCityInput({...cityInput, [state]: e.target.value})}
+                        onChange={(e) => setCityInput({ ...cityInput, [state]: e.target.value })}
                         onKeyDown={(e) => handleCityKeyDown(state, e)}
                       />
                     </div>
-                    
+
                     <div className="flex space-x-2 mb-3">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         size="sm"
                         onClick={() => selectAllCities(state)}
                       >
                         Select All
                       </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         size="sm"
                         onClick={() => deselectAllCities(state)}
                       >
@@ -615,7 +774,7 @@ export function CreateProject() {
                     ) : (
                       <div className="text-sm text-gray-500 mb-2">No cities added yet</div>
                     )}
-                    
+
                     {/* Selected cities */}
                     <div>
                       <h5 className="text-xs font-medium mb-1 text-gray-500">Selected Cities</h5>
@@ -633,7 +792,7 @@ export function CreateProject() {
                   </div>
                 ))
               )}
-              
+
               {Object.values(selectedStates).every(states => states.length === 0) && (
                 <div className="text-center p-6 border border-dashed rounded-md">
                   <p className="text-gray-500">No states selected. Please go back and select states first.</p>
@@ -647,7 +806,7 @@ export function CreateProject() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Choose Local Areas</h3>
             <div className="space-y-6">
-              {Object.entries(selectedCities).flatMap(([state, citiesList]) => 
+              {Object.entries(selectedCities).flatMap(([state, citiesList]) =>
                 citiesList.map(city => (
                   <div key={city} className="border p-4 rounded-md">
                     <h4 className="font-medium mb-1">{city}</h4>
@@ -657,24 +816,24 @@ export function CreateProject() {
                       <Input
                         placeholder={`Type local area for ${city} and press Enter`}
                         value={localAreaInput[city] || ""}
-                        onChange={(e) => setLocalAreaInput({...localAreaInput, [city]: e.target.value})}
+                        onChange={(e) => setLocalAreaInput({ ...localAreaInput, [city]: e.target.value })}
                         onKeyDown={(e) => handleLocalAreaKeyDown(city, e)}
                       />
                     </div>
-                    
+
                     {/* Local areas list */}
                     <div>
                       <h5 className="text-xs font-medium mb-1 text-gray-500">Added Local Areas</h5>
                       <div className="flex flex-wrap gap-1">
                         {localAreas[city] && localAreas[city].map(area => (
-                          <Badge 
-                            key={area} 
-                            variant="secondary" 
+                          <Badge
+                            key={area}
+                            variant="secondary"
                             className="flex items-center gap-1"
                           >
                             {area}
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => removeLocalArea(city, area)}
                               className="text-xs"
                             >
@@ -690,7 +849,7 @@ export function CreateProject() {
                   </div>
                 ))
               )}
-              
+
               {Object.values(selectedCities).every(cities => cities.length === 0) && (
                 <div className="text-center p-6 border border-dashed rounded-md">
                   <p className="text-gray-500">No cities selected. Please go back and select cities first.</p>
@@ -703,7 +862,7 @@ export function CreateProject() {
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Preview</h3>
-            
+
             <div className="space-y-4 border p-4 rounded-md bg-gray-50">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -715,7 +874,7 @@ export function CreateProject() {
                   <p className="font-medium">{serviceType}</p>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-gray-500 mb-2">Locations</h4>
                 <div className="space-y-3">
@@ -767,7 +926,7 @@ export function CreateProject() {
             <h3 className="text-lg font-medium">
               {serviceOption === "manual" ? "Manual Service Entry" : "AI Service Generation"}
             </h3>
-            
+
             {serviceOption === "manual" ? (
               <>
                 <div className="space-y-4">
@@ -781,7 +940,7 @@ export function CreateProject() {
                     onChange={(e) => setServiceNames(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="fileUpload" className="block">Choose file</Label>
                   <div className="flex items-center">
@@ -803,8 +962,8 @@ export function CreateProject() {
                   Our AI will analyze your project details and suggest appropriate services.
                 </p>
                 <div className="flex justify-center">
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     onClick={() => {
                       toast({
                         title: "AI Services Generated",
@@ -825,7 +984,7 @@ export function CreateProject() {
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-medium">Enter About Us Details</h3>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -840,7 +999,7 @@ export function CreateProject() {
                   onChange={(e) => setAboutUsEmail(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Phone className="h-4 w-4 text-gray-500" />
@@ -853,7 +1012,7 @@ export function CreateProject() {
                   onChange={(e) => setAboutUsPhone(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
@@ -875,7 +1034,7 @@ export function CreateProject() {
   };
 
   const getStepTitle = () => {
-    switch(step) {
+    switch (step) {
       case 1: return "Project Information";
       case 2: return "Country Selection";
       case 3: return "State Selection";
@@ -893,28 +1052,28 @@ export function CreateProject() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Create New Project</h1>
       </div>
-      
+
       {!showFinalSuccess ? (
         <>
           <div className="flex justify-between mb-6">
             <div className="flex items-center space-x-2">
-              {Array.from({length: 8}, (_, i) => i + 1).map(i => (
-                <div 
-                  key={i} 
+              {Array.from({ length: 8 }, (_, i) => i + 1).map(i => (
+                <div
+                  key={i}
                   className={`flex items-center ${i > 1 && "ml-2"}`}
                 >
-                  <div 
+                  <div
                     className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
-                      ${step === i 
+                      ${step === i
                         ? "bg-blue-600 text-white"
-                        : step > i 
-                          ? "bg-green-500 text-white" 
+                        : step > i
+                          ? "bg-green-500 text-white"
                           : "bg-gray-200 text-gray-500"}`}
                   >
                     {step > i ? <Check className="h-4 w-4" /> : i}
                   </div>
                   {i < 8 && (
-                    <div 
+                    <div
                       className={`h-1 w-6 ${step > i ? "bg-green-500" : "bg-gray-200"}`}
                     ></div>
                   )}
@@ -933,7 +1092,7 @@ export function CreateProject() {
               </div>
             </div>
           )}
-          
+
           <Dialog open={showServicesDialog} onOpenChange={setShowServicesDialog}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -943,16 +1102,16 @@ export function CreateProject() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col h-auto p-6 space-y-2"
                   onClick={() => handleServiceOptionSelect("manual")}
                 >
                   <ClipboardList className="h-10 w-10 text-gray-500" />
                   <span className="text-lg font-medium">Manual Entry</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col h-auto p-6 space-y-2"
                   onClick={() => handleServiceOptionSelect("ai")}
                 >
@@ -961,7 +1120,7 @@ export function CreateProject() {
                 </Button>
               </div>
               <div className="flex justify-center">
-                <Button 
+                <Button
                   variant="ghost"
                   onClick={() => setShowServicesDialog(false)}
                 >
@@ -970,7 +1129,7 @@ export function CreateProject() {
               </div>
             </DialogContent>
           </Dialog>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>{getStepTitle()}</CardTitle>
@@ -999,11 +1158,12 @@ export function CreateProject() {
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              
+
               <Button
                 type="button"
-                onClick={step === 1 ? handleCompletedFirstStep : handleNextStep}
-                disabled={(step === 1 && (!projectName || !serviceType))}
+                onClick={handleNextStep}
+                // onClick={step === 1 ? handleCompletedFirstStep : handleNextStep}
+                disabled={(loading === 1)}
               >
                 {step < 8 ? (
                   <>
@@ -1037,11 +1197,11 @@ export function CreateProject() {
               <p className="text-lg">
                 Your project has been successfully created and is ready to use.
               </p>
-              
+
               <div className="text-sm text-gray-500">
                 Redirecting in <span className="font-bold">{redirectCounter}</span> seconds…
               </div>
-              
+
               <div>
                 <Button onClick={() => navigate("/")}>
                   Go to project listing page

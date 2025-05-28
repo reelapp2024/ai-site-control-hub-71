@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PostEditor } from "./components/admin/PostEditor";
+import Login from "./pages/Login"
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<Index />} />
+
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Index />} />
           <Route path="/post-editor" element={<Index />} />
