@@ -42,10 +42,34 @@ export const testConnection = async (credential: HostingCredential): Promise<boo
       description: `Connecting to ${credential.providerName}...`,
     });
 
+    // Clean and format server URL for cPanel
+    let serverUrl = credential.server || '';
+    let port = credential.port || 21;
+    
+    if (credential.protocol === 'cpanel') {
+      // Remove common prefixes and paths from cPanel URLs
+      serverUrl = serverUrl
+        .replace('http://', '')
+        .replace('https://', '')
+        .replace('/cpanel', '')
+        .replace('/whm', '');
+      
+      // Use secure cPanel port by default
+      port = credential.port || 2083;
+    }
+
+    console.log('Testing connection for credential:', {
+      providerId: credential.providerId,
+      protocol: credential.protocol,
+      server: serverUrl,
+      port: port,
+      username: credential.username
+    });
+
     const result = await testConnectionAPI({
       protocol: credential.protocol || 'ftp',
-      server: credential.server || '',
-      port: credential.port || 21,
+      server: serverUrl,
+      port: port,
       username: credential.username,
       password: credential.password ? decryptData(credential.password) : undefined,
       apiKey: credential.apiKey ? decryptData(credential.apiKey) : undefined,
@@ -58,7 +82,7 @@ export const testConnection = async (credential: HostingCredential): Promise<boo
       });
       toast({
         title: "Connection successful",
-        description: `Successfully connected to ${credential.providerName}`,
+        description: `Successfully connected to ${credential.providerName}${result.latency ? ` (${result.latency}ms)` : ''}`,
       });
       return true;
     } else {
