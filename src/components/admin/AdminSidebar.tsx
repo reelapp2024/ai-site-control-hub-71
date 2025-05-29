@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -22,7 +21,8 @@ import {
   FolderOpen,
   Tag,
   Tags,
-  Coins
+  Coins,
+  Server
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -43,6 +43,7 @@ const getBaseSidebarItems = () => [
     ]
   },
   { id: "websites", label: "Websites", icon: Globe },
+  { id: "hosting", label: "Hosting", icon: Server },
   { 
     id: "domains", 
     label: "Domains", 
@@ -101,8 +102,8 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
       if (websiteIndex !== -1) {
         const newItems = [...baseItems];
         const contentItems = getContentManagementItems();
-        // Insert after websites
-        newItems.splice(websiteIndex + 1, 0, ...contentItems);
+        // Insert after hosting
+        newItems.splice(websiteIndex + 2, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     } else {
@@ -125,7 +126,7 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
           if (websiteIndex !== -1) {
             const newItems = [...baseItems];
             const contentItems = getContentManagementItems();
-            newItems.splice(websiteIndex + 1, 0, ...contentItems);
+            newItems.splice(websiteIndex + 2, 0, ...contentItems);
             setSidebarItems(newItems);
           }
         } else {
@@ -144,7 +145,7 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
       if (websiteIndex !== -1) {
         const newItems = [...baseItems];
         const contentItems = getContentManagementItems();
-        newItems.splice(websiteIndex + 1, 0, ...contentItems);
+        newItems.splice(websiteIndex + 2, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     }
