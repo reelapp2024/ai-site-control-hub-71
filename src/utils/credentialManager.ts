@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 // Types for credential storage
@@ -7,29 +6,93 @@ export type HostingCredential = {
   providerId: string;
   providerName: string;
   username: string;
-  password?: string; // Only stored temporarily, not persisted in state
+  password?: string;
   apiKey?: string;
   server?: string;
   port?: number;
   createdAt: Date;
   lastTested?: Date;
   isValid?: boolean;
+  protocol?: ConnectionProtocol;
 };
 
 export type ConnectionProtocol = 'ftp' | 'sftp' | 'api' | 'cpanel' | 'plesk' | 'directadmin';
 
-// Encryption utility (mock) - in a real app, use a proper encryption library
+// Enhanced encryption (in production, use a proper encryption library like crypto-js)
 const encryptData = (data: string): string => {
-  // This is a placeholder - in production, use a real encryption library
-  return `encrypted:${data}`;
+  // Basic encryption - replace with proper encryption in production
+  return btoa(data);
 };
 
 const decryptData = (encryptedData: string): string => {
-  // This is a placeholder - in production, use a real decryption library
-  if (encryptedData.startsWith('encrypted:')) {
-    return encryptedData.substring(10);
+  try {
+    return atob(encryptedData);
+  } catch {
+    return encryptedData;
   }
-  return encryptedData;
+};
+
+// Real connection testing
+export const testConnection = async (credential: HostingCredential): Promise<boolean> => {
+  try {
+    toast({
+      title: "Testing connection",
+      description: `Connecting to ${credential.providerName}...`,
+    });
+
+    // Real connection test implementation
+    const response = await fetch('/api/test-connection', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        protocol: credential.protocol || 'ftp',
+        server: credential.server,
+        port: credential.port,
+        username: credential.username,
+        password: credential.password ? decryptData(credential.password) : undefined,
+        apiKey: credential.apiKey ? decryptData(credential.apiKey) : undefined,
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      updateCredential(credential.id, { 
+        lastTested: new Date(),
+        isValid: true
+      });
+      toast({
+        title: "Connection successful",
+        description: `Successfully connected to ${credential.providerName}`,
+      });
+      return true;
+    } else {
+      updateCredential(credential.id, { 
+        lastTested: new Date(),
+        isValid: false
+      });
+      toast({
+        title: "Connection failed",
+        description: result.message || "Failed to connect. Please check your credentials.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("Connection test error:", error);
+    updateCredential(credential.id, { 
+      lastTested: new Date(),
+      isValid: false
+    });
+    toast({
+      title: "Connection error",
+      description: `Network error: ${error}`,
+      variant: "destructive"
+    });
+    return false;
+  }
 };
 
 // Securely store credentials (mock implementation)
@@ -111,49 +174,4 @@ export const deleteCredential = (id: string): boolean => {
   }
   
   return false;
-};
-
-// Test credential connection
-export const testConnection = async (credential: HostingCredential): Promise<boolean> => {
-  // This is a simulated connection test
-  // In a real app, this would make an actual connection to the hosting provider
-  
-  try {
-    // Simulate API/connection delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo purposes, 90% of tests succeed
-    const isSuccessful = Math.random() > 0.1;
-    
-    if (isSuccessful) {
-      updateCredential(credential.id, { 
-        lastTested: new Date(),
-        isValid: true
-      });
-      toast({
-        title: "Connection successful",
-        description: `Successfully connected to ${credential.providerName}`,
-      });
-      return true;
-    } else {
-      updateCredential(credential.id, { 
-        lastTested: new Date(),
-        isValid: false
-      });
-      toast({
-        title: "Connection failed",
-        description: `Failed to connect to ${credential.providerName}. Please check your credentials.`,
-        variant: "destructive"
-      });
-      return false;
-    }
-  } catch (error) {
-    console.error("Connection test error:", error);
-    toast({
-      title: "Connection error",
-      description: `An error occurred while testing the connection: ${error}`,
-      variant: "destructive"
-    });
-    return false;
-  }
 };
