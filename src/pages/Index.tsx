@@ -38,7 +38,7 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="posts">
-              <PostsManagement onEditPost={handleEditPost} onNewPost={handleNewPost} />
+              <PostsManagement />
             </TabsContent>
             
             <TabsContent value="post-editor">
