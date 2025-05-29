@@ -1,91 +1,273 @@
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   LayoutDashboard, 
-  FileText, 
+  Globe, 
   Users, 
-  Settings, 
+  Bot, 
   BarChart3, 
-  CreditCard,
-  Server,
-  File
+  Settings,
+  Zap,
+  Menu,
+  X,
+  ListPlus,
+  ListTodo,
+  UserCog,
+  Palette,
+  Plug,
+  Link,
+  FileText,
+  Layout,
+  Newspaper,
+  FolderOpen,
+  Tag,
+  Tags,
+  Coins
 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface AdminSidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  activeSection: string;
+  setActiveSection: (section: string) => void;
 }
 
-const sidebarItems = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
+const getBaseSidebarItems = () => [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { 
+    id: "projects", 
+    label: "Projects", 
+    icon: ListTodo,
+    submenu: [
+      { id: "create-project", label: "Create Project", icon: ListPlus },
+      { id: "project-list", label: "Project List", icon: ListTodo },
+    ]
   },
-  {
-    id: "posts",
-    label: "Posts",
-    icon: FileText,
+  { id: "websites", label: "Websites", icon: Globe },
+  { 
+    id: "domains", 
+    label: "Domains", 
+    icon: Link,
+    submenu: [
+      { id: "domain-management", label: "Domain Management", icon: Link },
+    ]
   },
-  {
-    id: "pages",
-    label: "Pages",
-    icon: File,
+  { id: "users", label: "Users", icon: Users },
+  { 
+    id: "subadmin", 
+    label: "Sub Admin", 
+    icon: UserCog,
+    submenu: [
+      { id: "manage-subadmin", label: "Manage Sub Admin", icon: UserCog },
+    ]
   },
-  {
-    id: "users",
-    label: "Users",
-    icon: Users,
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-  },
-  {
-    id: "credits",
-    label: "Credits",
-    icon: CreditCard,
-  },
-  {
-    id: "hosting",
-    label: "Hosting",
-    icon: Server,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-  },
+  { id: "themes", label: "Themes", icon: Palette },
+  { id: "plugins", label: "Plugins", icon: Plug },
+  { id: "credits", label: "Credits", icon: Coins },
+  { id: "ai-models", label: "AI Models", icon: Bot },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminSidebar({ activeTab, setActiveTab }: AdminSidebarProps) {
-  return (
-    <div className="w-64 border-r bg-background">
-      <div className="p-6">
-        <h2 className="text-2xl font-bold">Admin Panel</h2>
-      </div>
+const getContentManagementItems = () => [
+  { 
+    id: "post-management", 
+    label: "Posts", 
+    icon: Newspaper,
+    submenu: [
+      { id: "posts", label: "All Posts", icon: Newspaper },
+      { id: "post-categories", label: "Categories", icon: FolderOpen },
+      { id: "post-subcategories", label: "Subcategories", icon: Tag },
+      { id: "post-tags", label: "Tags", icon: Tags },
+    ]
+  },
+  { id: "pages", label: "Pages", icon: Layout },
+  { id: "website-generator", label: "Website Generator", icon: FileText },
+];
+
+export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
+  const [sidebarItems, setSidebarItems] = useState(getBaseSidebarItems());
+  
+  // Check if the website generator plugin is active
+  useEffect(() => {
+    const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
+    
+    if (isPluginActive) {
+      // Insert content management items after websites
+      const baseItems = getBaseSidebarItems();
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
       
-      <ScrollArea className="flex-1 px-3">
-        <div className="space-y-1 pb-4">
-          {sidebarItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={activeTab === item.id ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                activeTab === item.id && "bg-primary text-primary-foreground"
+      if (websiteIndex !== -1) {
+        const newItems = [...baseItems];
+        const contentItems = getContentManagementItems();
+        // Insert after websites
+        newItems.splice(websiteIndex + 1, 0, ...contentItems);
+        setSidebarItems(newItems);
+      }
+    } else {
+      // Reset to base items
+      setSidebarItems(getBaseSidebarItems());
+    }
+  }, []);
+
+  // Listen for storage events from other components
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "website-generator-plugin-active") {
+        const isPluginActive = e.newValue === "true";
+        
+        if (isPluginActive) {
+          // Add content management items
+          const baseItems = getBaseSidebarItems();
+          const websiteIndex = baseItems.findIndex(item => item.id === "websites");
+          
+          if (websiteIndex !== -1) {
+            const newItems = [...baseItems];
+            const contentItems = getContentManagementItems();
+            newItems.splice(websiteIndex + 1, 0, ...contentItems);
+            setSidebarItems(newItems);
+          }
+        } else {
+          // Remove content management items
+          setSidebarItems(getBaseSidebarItems());
+        }
+      }
+    };
+
+    // Also check for changes when component mounts
+    const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
+    if (isPluginActive) {
+      const baseItems = getBaseSidebarItems();
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
+      
+      if (websiteIndex !== -1) {
+        const newItems = [...baseItems];
+        const contentItems = getContentManagementItems();
+        newItems.splice(websiteIndex + 1, 0, ...contentItems);
+        setSidebarItems(newItems);
+      }
+    }
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  const toggleSubmenu = (id: string) => {
+    setExpandedSubmenu(expandedSubmenu === id ? null : id);
+  };
+
+  return (
+    <div className={cn(
+      "bg-gray-900 text-white transition-all duration-300 flex flex-col",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+        {!isCollapsed && (
+          <div className="flex items-center space-x-2">
+            <Zap className="h-8 w-8 text-blue-400" />
+            <span className="text-xl font-bold">AI WebGen</span>
+          </div>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          {isCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const isSubmenuOpen = expandedSubmenu === item.id;
+          
+          return (
+            <div key={item.id} className="space-y-1">
+              <button
+                onClick={() => {
+                  if (hasSubmenu) {
+                    toggleSubmenu(item.id);
+                  } else {
+                    setActiveSection(item.id);
+                  }
+                }}
+                className={cn(
+                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
+                  (activeSection === item.id || (hasSubmenu && item.submenu?.some(sub => activeSection === sub.id)))
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                )}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">{item.label}</span>
+                    {hasSubmenu && (
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isSubmenuOpen ? "rotate-180" : ""}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    )}
+                  </>
+                )}
+              </button>
+
+              {/* Submenu */}
+              {!isCollapsed && hasSubmenu && isSubmenuOpen && (
+                <div className="pl-11 space-y-1">
+                  {item.submenu?.map((subItem) => {
+                    const SubIcon = subItem.icon;
+                    return (
+                      <button
+                        key={subItem.id}
+                        onClick={() => setActiveSection(subItem.id)}
+                        className={cn(
+                          "w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-left",
+                          activeSection === subItem.id
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        )}
+                      >
+                        <SubIcon className="h-4 w-4 flex-shrink-0" />
+                        <span>{subItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          ))}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-xs font-semibold">A</span>
+          </div>
+          {!isCollapsed && (
+            <div>
+              <p className="text-sm font-medium">Admin User</p>
+              <p className="text-xs text-gray-400">admin@aiwebgen.com</p>
+            </div>
+          )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
