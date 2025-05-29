@@ -1,4 +1,5 @@
 import { toast } from "@/hooks/use-toast";
+import { testConnection } from '@/api/testConnection';
 
 // Types for credential storage
 export type HostingCredential = {
@@ -32,7 +33,7 @@ const decryptData = (encryptedData: string): string => {
   }
 };
 
-// Real connection testing
+// Real connection testing using the API
 export const testConnection = async (credential: HostingCredential): Promise<boolean> => {
   try {
     toast({
@@ -40,23 +41,14 @@ export const testConnection = async (credential: HostingCredential): Promise<boo
       description: `Connecting to ${credential.providerName}...`,
     });
 
-    // Real connection test implementation
-    const response = await fetch('/api/test-connection', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        protocol: credential.protocol || 'ftp',
-        server: credential.server,
-        port: credential.port,
-        username: credential.username,
-        password: credential.password ? decryptData(credential.password) : undefined,
-        apiKey: credential.apiKey ? decryptData(credential.apiKey) : undefined,
-      }),
+    const result = await testConnection({
+      protocol: credential.protocol || 'ftp',
+      server: credential.server || '',
+      port: credential.port || 21,
+      username: credential.username,
+      password: credential.password ? decryptData(credential.password) : undefined,
+      apiKey: credential.apiKey ? decryptData(credential.apiKey) : undefined,
     });
-
-    const result = await response.json();
     
     if (result.success) {
       updateCredential(credential.id, { 

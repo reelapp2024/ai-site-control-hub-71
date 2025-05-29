@@ -1,5 +1,6 @@
 
 import { toast } from "@/hooks/use-toast";
+import { verifyDomain, checkDNSRecord, checkVerificationFile, checkMetaTag } from '@/api/domainVerificationApi';
 
 export type VerificationMethod = 'dns' | 'file' | 'meta';
 
@@ -11,23 +12,13 @@ export type VerificationResult = {
 };
 
 class DomainVerificationService {
-  private baseUrl = '/api/domain-verification';
-
   async verifyDomain(domain: string, method: VerificationMethod, token: string): Promise<VerificationResult> {
     try {
-      const response = await fetch(`${this.baseUrl}/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          domain,
-          method,
-          token,
-        }),
+      const result = await verifyDomain({
+        domain,
+        method,
+        token,
       });
-
-      const result = await response.json();
       
       if (result.success) {
         toast({
@@ -70,20 +61,11 @@ class DomainVerificationService {
 
   async checkDNSRecord(domain: string, recordType: string, expectedValue: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/check-dns`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          domain,
-          recordType,
-          expectedValue,
-        }),
+      return await checkDNSRecord({
+        domain,
+        recordType,
+        expectedValue,
       });
-
-      const result = await response.json();
-      return result.found;
     } catch (error) {
       console.error('DNS check error:', error);
       return false;
@@ -92,20 +74,11 @@ class DomainVerificationService {
 
   async checkVerificationFile(domain: string, fileName: string, expectedContent: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/check-file`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          domain,
-          fileName,
-          expectedContent,
-        }),
+      return await checkVerificationFile({
+        domain,
+        fileName,
+        expectedContent,
       });
-
-      const result = await response.json();
-      return result.found;
     } catch (error) {
       console.error('File check error:', error);
       return false;
@@ -114,19 +87,10 @@ class DomainVerificationService {
 
   async checkMetaTag(domain: string, expectedContent: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/check-meta`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          domain,
-          expectedContent,
-        }),
+      return await checkMetaTag({
+        domain,
+        expectedContent,
       });
-
-      const result = await response.json();
-      return result.found;
     } catch (error) {
       console.error('Meta tag check error:', error);
       return false;

@@ -1,6 +1,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { DeploymentStatus } from '@/utils/realHostingService';
+import { getDeploymentStatus } from '@/api/hostingApi';
+
+export interface DeploymentStatus {
+  id: string;
+  status: 'pending' | 'uploading' | 'success' | 'failed';
+  progress: number;
+  message: string;
+  startTime: Date;
+  endTime?: Date;
+  domain?: string;
+  credentialId?: string;
+}
 
 export function useDeploymentMonitor(deploymentId: string | null) {
   const [status, setStatus] = useState<DeploymentStatus | null>(null);
@@ -14,14 +25,12 @@ export function useDeploymentMonitor(deploymentId: string | null) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/deployment-status/${deploymentId}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setStatus(data);
+      const data = await getDeploymentStatus(deploymentId);
+      setStatus({
+        ...data,
+        startTime: new Date(data.startTime),
+        endTime: data.endTime ? new Date(data.endTime) : undefined
+      });
     } catch (err) {
       console.error('Failed to fetch deployment status:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
