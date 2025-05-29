@@ -1,5 +1,6 @@
+
 import { toast } from "@/hooks/use-toast";
-import { testConnection } from '@/api/testConnection';
+import { testConnection as testConnectionAPI } from '@/api/testConnection';
 
 // Types for credential storage
 export type HostingCredential = {
@@ -41,7 +42,7 @@ export const testConnection = async (credential: HostingCredential): Promise<boo
       description: `Connecting to ${credential.providerName}...`,
     });
 
-    const result = await testConnection({
+    const result = await testConnectionAPI({
       protocol: credential.protocol || 'ftp',
       server: credential.server || '',
       port: credential.port || 21,
