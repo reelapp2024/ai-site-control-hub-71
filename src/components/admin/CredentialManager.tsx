@@ -60,9 +60,10 @@ const defaultPorts: Record<ConnectionProtocol, number> = {
 interface CredentialManagerProps {
   onCredentialSelected?: (credential: HostingCredential) => void;
   selectedDomain?: string;
+  onFileManagerOpen?: (credential: HostingCredential) => void;
 }
 
-export function CredentialManager({ onCredentialSelected, selectedDomain }: CredentialManagerProps) {
+export function CredentialManager({ onCredentialSelected, selectedDomain, onFileManagerOpen }: CredentialManagerProps) {
   const [credentials, setCredentials] = useState<HostingCredential[]>([]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingCredential, setEditingCredential] = useState<HostingCredential | null>(null);
@@ -510,9 +511,18 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
                             Testing
                           </>
                         ) : (
-                          "Test Connection"
+                          "Test"
                         )}
                       </Button>
+                      {credential.isValid && onFileManagerOpen && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onFileManagerOpen(credential)}
+                        >
+                          Browse Files
+                        </Button>
+                      )}
                       {onCredentialSelected && selectedDomain && (
                         <Button
                           size="sm"
