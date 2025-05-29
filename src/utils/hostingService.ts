@@ -19,6 +19,92 @@ export type FileListItem = {
   permissions?: string;
 };
 
+// Real cPanel API call for listing files
+const listCpanelFiles = async (credential: HostingCredential, path: string): Promise<FileListItem[]> => {
+  try {
+    console.log(`Making real cPanel API call to list files in: ${path}`);
+    
+    // Prepare cPanel API request
+    const cpanelUrl = credential.server?.replace(/\/+$/, ''); // Remove trailing slashes
+    const apiUrl = `${cpanelUrl}:2083/execute/Fileman/list_files`;
+    
+    // Create authentication header
+    const auth = btoa(`${credential.username}:${credential.password}`);
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      // Add query parameters for path
+      ...(path && { 
+        url: `${apiUrl}?dir=${encodeURIComponent(path)}`
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`cPanel API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.status === 0) {
+      throw new Error(data.errors?.[0] || 'cPanel API returned error');
+    }
+
+    // Convert cPanel response to our format
+    const files: FileListItem[] = (data.data || []).map((item: any) => ({
+      name: item.file || item.name,
+      path: item.fullpath || `${path}/${item.file || item.name}`,
+      size: parseInt(item.size) || 0,
+      type: item.type === 'dir' ? 'directory' : 'file',
+      lastModified: new Date(item.mtime * 1000), // Convert Unix timestamp
+      permissions: item.mode
+    }));
+
+    console.log(`Successfully fetched ${files.length} files from cPanel`);
+    return files;
+
+  } catch (error) {
+    console.error("cPanel file listing error:", error);
+    throw error;
+  }
+};
+
+// Real FTP/SFTP API call
+const listFtpFiles = async (credential: HostingCredential, path: string, protocol: ConnectionProtocol): Promise<FileListItem[]> => {
+  try {
+    console.log(`Making real ${protocol.toUpperCase()} call to list files in: ${path}`);
+    
+    const response = await httpHosting.post('/ftp/list-files', {
+      host: credential.server,
+      port: credential.port || (protocol === 'sftp' ? 22 : 21),
+      username: credential.username,
+      password: credential.password,
+      protocol: protocol,
+      path: path
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'FTP operation failed');
+    }
+
+    return response.data.files.map((item: any) => ({
+      name: item.name,
+      path: item.path,
+      size: item.size || 0,
+      type: item.type,
+      lastModified: new Date(item.lastModified),
+      permissions: item.permissions
+    }));
+
+  } catch (error) {
+    console.error(`${protocol.toUpperCase()} file listing error:`, error);
+    throw error;
+  }
+};
+
 // Real API calls for file operations
 export const listFiles = async (
   credential: HostingCredential,
@@ -26,43 +112,98 @@ export const listFiles = async (
   protocol: ConnectionProtocol = 'ftp'
 ): Promise<FileListItem[]> => {
   try {
-    console.log(`Listing files in ${path} using ${protocol}`);
+    console.log(`Listing files in ${path} using ${protocol} for ${credential.providerName}`);
     
-    // For now, return mock data until backend is implemented
-    // In production, this would call: await httpHosting.post('/list-files', { credentialId: credential.id, path, protocol });
-    
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-    
-    // Mock file structure for cPanel
-    if (path === "/" || path === "") {
-      return [
-        { name: 'public_html', path: '/public_html', size: 0, type: 'directory', lastModified: new Date() },
-        { name: 'mail', path: '/mail', size: 0, type: 'directory', lastModified: new Date() },
-        { name: 'logs', path: '/logs', size: 0, type: 'directory', lastModified: new Date() },
-        { name: 'tmp', path: '/tmp', size: 0, type: 'directory', lastModified: new Date() }
-      ];
-    } else if (path === '/public_html') {
-      return [
-        { name: 'index.html', path: '/public_html/index.html', size: 1024, type: 'file', lastModified: new Date() },
-        { name: 'images', path: '/public_html/images', size: 0, type: 'directory', lastModified: new Date() },
-        { name: 'css', path: '/public_html/css', size: 0, type: 'directory', lastModified: new Date() },
-        { name: 'js', path: '/public_html/js', size: 0, type: 'directory', lastModified: new Date() }
-      ];
-    } else {
-      return [];
+    // Show loading toast
+    toast({
+      title: "Loading files",
+      description: `Connecting to ${credential.providerName}...`
+    });
+
+    let files: FileListItem[] = [];
+
+    // Make real API calls based on protocol
+    switch (protocol) {
+      case 'cpanel':
+        files = await listCpanelFiles(credential, path);
+        break;
+      case 'ftp':
+      case 'sftp':
+        files = await listFtpFiles(credential, path, protocol);
+        break;
+      case 'plesk':
+        // Implement Plesk API call
+        files = await listPleskFiles(credential, path);
+        break;
+      case 'directadmin':
+        // Implement DirectAdmin API call  
+        files = await listDirectAdminFiles(credential, path);
+        break;
+      default:
+        throw new Error(`Unsupported protocol: ${protocol}`);
     }
+
+    toast({
+      title: "Files loaded",
+      description: `Found ${files.length} items in ${path}`
+    });
+
+    return files;
+    
   } catch (error) {
     console.error("File listing error:", error);
     toast({
-      title: "File listing error",
-      description: `Failed to list files: ${error}`,
+      title: "Failed to load files",
+      description: `Could not connect to ${credential.providerName}: ${error}`,
       variant: "destructive"
     });
     return [];
   }
 };
 
-// Upload file
+// Plesk API implementation
+const listPleskFiles = async (credential: HostingCredential, path: string): Promise<FileListItem[]> => {
+  try {
+    const response = await httpHosting.post('/plesk/list-files', {
+      host: credential.server,
+      username: credential.username,
+      password: credential.password,
+      path: path
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Plesk API failed');
+    }
+
+    return response.data.files;
+  } catch (error) {
+    console.error("Plesk API error:", error);
+    throw error;
+  }
+};
+
+// DirectAdmin API implementation
+const listDirectAdminFiles = async (credential: HostingCredential, path: string): Promise<FileListItem[]> => {
+  try {
+    const response = await httpHosting.post('/directadmin/list-files', {
+      host: credential.server,
+      username: credential.username,
+      password: credential.password,
+      path: path
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'DirectAdmin API failed');
+    }
+
+    return response.data.files;
+  } catch (error) {
+    console.error("DirectAdmin API error:", error);
+    throw error;
+  }
+};
+
+// Upload file with real API
 export const uploadFile = async (
   credential: HostingCredential,
   remotePath: string,
@@ -72,21 +213,53 @@ export const uploadFile = async (
   try {
     console.log(`Uploading file to ${remotePath} using ${protocol}`);
     
-    // For now, simulate upload until backend is implemented
-    // In production, this would call: await httpHosting.post('/upload-file', { credentialId: credential.id, remotePath, content, protocol });
-    
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate upload delay
-    
     toast({
-      title: "File uploaded",
-      description: `Successfully uploaded file to ${remotePath}`
+      title: "Uploading file",
+      description: `Uploading to ${credential.providerName}...`
     });
+
+    let response;
     
-    return true;
+    switch (protocol) {
+      case 'cpanel':
+        response = await httpHosting.post('/cpanel/upload-file', {
+          host: credential.server,
+          username: credential.username,
+          password: credential.password,
+          remotePath,
+          content
+        });
+        break;
+      case 'ftp':
+      case 'sftp':
+        response = await httpHosting.post('/ftp/upload-file', {
+          host: credential.server,
+          port: credential.port || (protocol === 'sftp' ? 22 : 21),
+          username: credential.username,
+          password: credential.password,
+          protocol,
+          remotePath,
+          content
+        });
+        break;
+      default:
+        throw new Error(`Upload not supported for protocol: ${protocol}`);
+    }
+    
+    if (response.data.success) {
+      toast({
+        title: "File uploaded",
+        description: `Successfully uploaded to ${remotePath}`
+      });
+      return true;
+    } else {
+      throw new Error(response.data.message || 'Upload failed');
+    }
+    
   } catch (error) {
     console.error("File upload error:", error);
     toast({
-      title: "Upload error",
+      title: "Upload failed",
       description: `Failed to upload file: ${error}`,
       variant: "destructive"
     });
@@ -94,7 +267,7 @@ export const uploadFile = async (
   }
 };
 
-// Delete file
+// Delete file with real API
 export const deleteFile = async (
   credential: HostingCredential,
   path: string,
@@ -103,16 +276,42 @@ export const deleteFile = async (
   try {
     console.log(`Deleting file ${path} using ${protocol}`);
     
-    // For now, simulate deletion until backend is implemented
-    // In production, this would call: await httpHosting.post('/delete-file', { credentialId: credential.id, path, protocol });
+    let response;
     
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate deletion delay
+    switch (protocol) {
+      case 'cpanel':
+        response = await httpHosting.post('/cpanel/delete-file', {
+          host: credential.server,
+          username: credential.username,
+          password: credential.password,
+          path
+        });
+        break;
+      case 'ftp':
+      case 'sftp':
+        response = await httpHosting.post('/ftp/delete-file', {
+          host: credential.server,
+          port: credential.port || (protocol === 'sftp' ? 22 : 21),
+          username: credential.username,
+          password: credential.password,
+          protocol,
+          path
+        });
+        break;
+      default:
+        throw new Error(`Delete not supported for protocol: ${protocol}`);
+    }
     
-    return true;
+    if (response.data.success) {
+      return true;
+    } else {
+      throw new Error(response.data.message || 'Delete failed');
+    }
+    
   } catch (error) {
     console.error("File deletion error:", error);
     toast({
-      title: "File deletion error",
+      title: "Delete failed",
       description: `Failed to delete file: ${error}`,
       variant: "destructive"
     });
