@@ -35,6 +35,28 @@ export function CreateProject() {
   // Location selection states
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
+
+  //API HIT OR UNHIT BASED ON BELOW
+
+  const [lastSavedProjectName, setLastSavedProjectName] = useState("");
+  const [lastSavedServiceType, setLastSavedServiceType] = useState("");
+  const [lastSavedWantImages, setLastSavedWantImages] = useState(false);
+  const [lastSavedCountries, setLastSavedCountries] = useState<Country[]>([]);
+  const [lastSavedStates, setLastSavedStates] = useState<{ [country: string]: string[] }>({});
+  const [lastSavedCities, setLastSavedCities] = useState<{ [state: string]: string[] }>({});
+  const [lastSavedLocalAreas, setLastSavedLocalAreas] = useState<{ [city: string]: { id: string; name: string }[] }>({});
+  const [lastSavedServiceOption, setLastSavedServiceOption] = useState<"manual" | "ai" | "">("");
+  const [lastSavedServiceNames, setLastSavedServiceNames] = useState("");
+  const [lastSavedAboutUsEmail, setLastSavedAboutUsEmail] = useState("");
+  const [lastSavedAboutUsPhone, setLastSavedAboutUsPhone] = useState("");
+  const [lastSavedAboutUsLocation, setLastSavedAboutUsLocation] = useState("");
+
+
+  const [fetchedCountries, setFetchedCountries] = useState(false);
+  const [fetchedStates, setFetchedStates] = useState(false);
+  const [fetchedCities, setFetchedCities] = useState(false);
+  const [fetchedLocalAreas, setFetchedLocalAreas] = useState(false);
+
   // With these:
   interface Country {
     countryId?: string; // Optional for manual countries
@@ -98,6 +120,23 @@ export function CreateProject() {
 
   // Page creation option - removed from here, now managed per country
 
+
+
+
+  useEffect(() => {
+    // If there's no projectId (new project), reset all location-related states
+    if (!projectId) {
+      resetForm();
+      // Clear local storage keys to prevent data leakage
+      localStorage.removeItem(`createProjectDraft:new`);
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("createProjectLastSubmitted:")) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+  }, []); // Empty dependency array to run only on mount
+
   const fetchStatesForCountry = async (countryId: string) => {
     setLoadingStates(true);
     try {
@@ -136,59 +175,18 @@ export function CreateProject() {
   };
 
 
-useEffect(() => {
-  if (step === 4 && projectId) {
-    const fetchCitiesForStep4 = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await httpFile.post(
-          "/my_site",
-          { projectId, pageType: "home" },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
 
-        if (res.status === 200) {
-          const projectData = res.data.projectInfo || {};
-          const cityArr = projectData.locations?.city || [];
 
-          const newSelectedCities: { [state: string]: string[] } = {};
 
-          // Initialize selected cities from API response
-          cityArr.forEach((city: any) => {
-            const country = selectedCountries.find((c) =>
-              statesByCountry[c.countryId]?.some((s: State) => s.id === city.stateId)
-            );
-            if (!country || !country.countryId) return;
 
-            const state = statesByCountry[country.countryId]?.find((s: State) => s.id === city.stateId);
-            const stateName = state?.name || "Unknown";
 
-            if (!newSelectedCities[stateName]) {
-              newSelectedCities[stateName] = [];
-            }
-            if (!newSelectedCities[stateName].includes(city.name)) {
-              newSelectedCities[stateName].push(city.name);
-            }
-          });
 
-          setSelectedCities((prev) => ({ ...prev, ...newSelectedCities }));
-        }
-      } catch (error) {
-        console.error("FetchCitiesForStep4 Error:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch cities for Step 4",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchCitiesForStep4();
-  }
-}, [step, projectId, selectedCountries, statesByCountry]);
+
+
+
+
+
 
   const fetchCitiesForState = async (stateId: string, stateName: string, search: string = "") => {
     setLoading(true);
@@ -223,18 +221,6 @@ useEffect(() => {
         return {
           ...prev,
           [stateName]: [...existingCities, ...newCities],
-        };
-      });
-
-      // Update selectedCities, avoiding duplicates
-      setSelectedCities((prev) => {
-        const currentCities = prev[stateName] || [];
-        const newSelected = cities
-          .map((city) => city.name)
-          .filter((cityName) => !currentCities.includes(cityName));
-        return {
-          ...prev,
-          [stateName]: [...currentCities, ...newSelected],
         };
       });
     } catch (err: any) {
@@ -280,13 +266,11 @@ useEffect(() => {
         const newCitiesByState: { [state: string]: City[] } = {};
         const newSelectedCities: { [state: string]: string[] } = {};
 
-        // Map cities to their states
         cityArr.forEach((city: any) => {
-          // Find the country that contains the state
           const country = selectedCountries.find((c) =>
             statesByCountry[c.countryId]?.some((s: State) => s.id === city.stateId)
           );
-          if (!country || !country.countryId) return; // Skip if country not found
+          if (!country || !country.countryId) return;
 
           const state = statesByCountry[country.countryId]?.find((s: State) => s.id === city.stateId);
           const stateName = state?.name || "Unknown";
@@ -303,18 +287,18 @@ useEffect(() => {
             status: city.status || 0,
           };
           newCitiesByState[stateName].push(cityObj);
-          // Only add to selectedCities if it doesn't already exist
           if (!newSelectedCities[stateName].includes(city.name)) {
             newSelectedCities[stateName].push(city.name);
           }
         });
+
         setCitiesByState((prev) => ({ ...prev, ...newCitiesByState }));
         setSelectedCities((prev) => {
           const updated = { ...prev };
           Object.entries(newSelectedCities).forEach(([stateName, cities]) => {
             updated[stateName] = [
               ...(updated[stateName] || []),
-              ...cities.filter((city) => !(updated[stateName] || []).includes(city)), // Avoid duplicates
+              ...cities.filter((city) => !(updated[stateName] || []).includes(city)),
             ];
           });
           return updated;
@@ -322,33 +306,48 @@ useEffect(() => {
 
         // Initialize localAreas and localAreaInput
         const initialInputs: { [city: string]: string } = {};
-        const initialLocals: { [city: string]: { id: string; name: string }[] } = {};
+        const apiLocalAreas: { [city: string]: { id: string; name: string }[] } = {};
 
         if (cityArr.length > 0) {
           cityArr.forEach((city: any) => {
             const cityName = city.name;
             initialInputs[cityName] = "";
-            initialLocals[cityName] = [];
+            apiLocalAreas[cityName] = [];
           });
         } else {
           initialInputs["all"] = "";
-          initialLocals["all"] = [];
+          apiLocalAreas["all"] = [];
         }
 
         localsArr.forEach((local: any) => {
           const cityName = cityArr.find((c: any) => c.cityId === local.cityId)?.name || "all";
-          if (!(cityName in initialLocals)) {
-            initialLocals[cityName] = [];
+          if (!(cityName in apiLocalAreas)) {
+            apiLocalAreas[cityName] = [];
             initialInputs[cityName] = "";
           }
-          initialLocals[cityName].push({
+          apiLocalAreas[cityName].push({
             id: local._id || Date.now().toString(),
             name: local.name,
           });
         });
 
+        // Merge API local areas with existing localAreas
+        setLocalAreas((prev) => {
+          const merged = { ...prev };
+          Object.entries(apiLocalAreas).forEach(([cityName, areas]) => {
+            if (!merged[cityName]) {
+              merged[cityName] = [];
+            }
+            areas.forEach((area) => {
+              if (!merged[cityName].some((a) => a.name === area.name)) {
+                merged[cityName].push(area);
+              }
+            });
+          });
+          return merged;
+        });
         setLocalAreaInput(initialInputs);
-        setLocalAreas(initialLocals);
+        setLastSavedLocalAreas(apiLocalAreas);
       }
     } catch (error) {
       console.error("FetchProjectDetails Error:", error);
@@ -358,18 +357,14 @@ useEffect(() => {
         variant: "destructive",
       });
       setLocalAreaInput({ all: "" });
-      setLocalAreas({ all: [] });
+      setLocalAreas((prev) => ({ ...prev, all: [] }));
     } finally {
       setLoadingLocalAreas(false);
     }
   };
 
 
-  useEffect(() => {
-    if (step === 5 && projectId) {
-      fetchProjectDetails();
-    }
-  }, [step, projectId]);
+
 
   const handleCountryClick = (countryId: string) => {
     if (!statesByCountry[countryId]) {
@@ -412,7 +407,7 @@ useEffect(() => {
       const newStateName = stateInput[countryName].trim();
       const country = selectedCountries.find((c) => c.name === countryName);
       if (!country) return; // Safety check
-      const countryId = country.countryId; // Use countryId from selectedCountries
+      const countryId = country.countryId;
 
       if (!countryId) {
         toast({
@@ -431,14 +426,21 @@ useEffect(() => {
       }));
 
       // Update selected states
-      setSelectedStates((prev) => ({
-        ...prev,
-        [countryName]: [...(prev[countryName] || []), newStateName],
-      }));
+      setSelectedStates((prev) => {
+        const updated = {
+          ...prev,
+          [countryName]: [...(prev[countryName] || []), newStateName],
+        };
+        setLastSavedStates(updated);
+        return updated;
+      });
 
       setStateInput({ ...stateInput, [countryName]: "" });
     }
   };
+
+
+
   const toggleStatePageCreation = (countryName: string, stateName: string) => {
     const country = selectedCountries.find((c) => c.name === countryName);
     if (!country || !country.countryId) return; // Safety check
@@ -547,6 +549,12 @@ useEffect(() => {
   // Step 1: Reload Project Details
   useEffect(() => {
     if (step === 1 && projectId) {
+      const hasProjectDataChanged =
+        projectName !== lastSavedProjectName ||
+        serviceType !== lastSavedServiceType ||
+        wantImages !== lastSavedWantImages;
+      if (!hasProjectDataChanged) return;
+
       const fetchProjectDetailsForStep1 = async () => {
         try {
           const token = localStorage.getItem("token");
@@ -561,6 +569,9 @@ useEffect(() => {
             setProjectName(projectData.projectName || "");
             setServiceType(projectData.serviceType || "");
             setWantImages(projectData.wantImages === 1);
+            setLastSavedProjectName(projectData.projectName || "");
+            setLastSavedServiceType(projectData.serviceType || "");
+            setLastSavedWantImages(projectData.wantImages === 1);
           }
         } catch (error) {
           console.error("FetchProjectDetailsForStep1 Error:", error);
@@ -574,11 +585,11 @@ useEffect(() => {
 
       fetchProjectDetailsForStep1();
     }
-  }, [step, projectId]);
+  }, [step, projectId, projectName, serviceType, wantImages]);
 
   // Step 2: Reload Countries
   useEffect(() => {
-    if (step === 2 && projectId) {
+    if (step === 2 && projectId && !fetchedCountries) {
       const fetchCountriesForStep2 = async () => {
         try {
           const token = localStorage.getItem("token");
@@ -591,12 +602,24 @@ useEffect(() => {
           if (res.status === 200) {
             const projectData = res.data.projectInfo || {};
             const countryArr = projectData.locations?.country || [];
-            const updatedCountries = countryArr.map((item: any) => ({
+            const apiCountries = countryArr.map((item: any) => ({
               countryId: item.countryId,
               name: item.name,
               status: item.status || 0,
             }));
-            setSelectedCountries(updatedCountries);
+
+            // Merge API countries with current selections, avoiding duplicates
+            setSelectedCountries((prev) => {
+              const merged = [...prev];
+              apiCountries.forEach((apiCountry: Country) => {
+                if (!merged.some((c) => c.name === apiCountry.name)) {
+                  merged.push(apiCountry);
+                }
+              });
+              return merged;
+            });
+            setLastSavedCountries(apiCountries);
+            setFetchedCountries(true);
           }
         } catch (error) {
           console.error("FetchCountriesForStep2 Error:", error);
@@ -609,64 +632,191 @@ useEffect(() => {
       };
 
       fetchCountriesForStep2();
+    } else if (step !== 2) {
+      setFetchedCountries(false); // Reset when leaving Step 2
+    }
+  }, [step, projectId]);
+  // Step 3: Reload States
+
+
+
+
+  useEffect(() => {
+    if (step === 3 && projectId && !fetchedStates) {
+      const fetchStatesForStep3 = async () => {
+        setLoadingStates(true);
+        try {
+          const token = localStorage.getItem("token");
+          const res = await httpFile.post(
+            "/my_site",
+            { projectId, pageType: "home" },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (res.status === 200) {
+            const projectData = res.data.projectInfo || {};
+            const stateArr = projectData.locations?.state || [];
+
+            const newSelectedStates: { [country: string]: string[] } = {};
+
+            stateArr.forEach((state: any) => {
+              const country = selectedCountries.find((c) => c.countryId === state.countryId);
+              if (!country || !country.countryId) return;
+
+              const countryName = country.name;
+              if (!newSelectedStates[countryName]) {
+                newSelectedStates[countryName] = [];
+              }
+              newSelectedStates[countryName].push(state.name);
+            });
+
+            // Merge with existing selections
+            setSelectedStates((prev) => {
+              const merged = { ...prev };
+              Object.entries(newSelectedStates).forEach(([countryName, states]) => {
+                if (!merged[countryName]) {
+                  merged[countryName] = [];
+                }
+                states.forEach((stateName) => {
+                  if (!merged[countryName].includes(stateName)) {
+                    merged[countryName].push(stateName);
+                  }
+                });
+              });
+              return merged;
+            });
+            setLastSavedStates(newSelectedStates);
+            setFetchedStates(true);
+
+            for (const country of selectedCountries) {
+              if (country.countryId && !statesByCountry[country.countryId]) {
+                await fetchStatesForCountry(country.countryId);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("FetchStatesForStep3 Error:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch states for Step 3",
+            variant: "destructive",
+          });
+        } finally {
+          setLoadingStates(false);
+        }
+      };
+
+      fetchStatesForStep3();
+    } else if (step === 3 && !projectId) {
+      setSelectedStates({});
+      selectedCountries.forEach((country) => {
+        if (country.countryId && !statesByCountry[country.countryId]) {
+          fetchStatesForCountry(country.countryId);
+        }
+      });
+    } else if (step !== 3) {
+      setFetchedStates(false); // Reset when leaving Step 3
+    }
+  }, [step, projectId, selectedCountries, statesByCountry]);
+
+
+
+
+  useEffect(() => {
+    if (step === 4 && projectId && !fetchedCities) {
+      const fetchCitiesForStep4 = async () => {
+        setLoading(true);
+        try {
+          const token = localStorage.getItem("token");
+          const res = await httpFile.post(
+            "/my_site",
+            { projectId, pageType: "home" },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (res.status === 200) {
+            const projectData = res.data.projectInfo || {};
+            const cityArr = projectData.locations?.city || [];
+
+            const newSelectedCities: { [state: string]: string[] } = {};
+
+            cityArr.forEach((city: any) => {
+              const country = selectedCountries.find((c) =>
+                statesByCountry[c.countryId]?.some((s: State) => s.id === city.stateId)
+              );
+              if (!country || !country.countryId) return;
+
+              const state = statesByCountry[country.countryId]?.find((s: State) => s.id === city.stateId);
+              const stateName = state?.name || "Unknown";
+
+              if (!newSelectedCities[stateName]) {
+                newSelectedCities[stateName] = [];
+              }
+              if (!newSelectedCities[stateName].includes(city.name)) {
+                newSelectedCities[stateName].push(city.name);
+              }
+            });
+
+            // Merge with existing selections
+            setSelectedCities((prev) => {
+              const merged = { ...prev };
+              Object.entries(newSelectedCities).forEach(([stateName, cities]) => {
+                if (!merged[stateName]) {
+                  merged[stateName] = [];
+                }
+                cities.forEach((cityName) => {
+                  if (!merged[stateName].includes(cityName)) {
+                    merged[stateName].push(cityName);
+                  }
+                });
+              });
+              return merged;
+            });
+            setLastSavedCities(newSelectedCities);
+            setFetchedCities(true);
+          }
+        } catch (error) {
+          console.error("FetchCitiesForStep4 Error:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch cities for Step 4",
+            variant: "destructive",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCitiesForStep4();
+    } else if (step === 4 && !projectId) {
+      setSelectedCities({});
+    } else if (step !== 4) {
+      setFetchedCities(false); // Reset when leaving Step 4
+    }
+  }, [step, projectId, selectedCountries, statesByCountry]);
+
+
+
+
+
+  useEffect(() => {
+    if (step === 5 && projectId && !fetchedLocalAreas) {
+      fetchProjectDetails();
+      setFetchedLocalAreas(true);
+    } else if (step !== 5) {
+      setFetchedLocalAreas(false); // Reset when leaving Step 5
     }
   }, [step, projectId]);
 
-  // Step 3: Reload States
-useEffect(() => {
-  if (step === 3 && projectId) {
-    const fetchStatesForStep3 = async () => {
-      setLoadingStates(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await httpFile.post(
-          "/my_site",
-          { projectId, pageType: "home" },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
 
-        if (res.status === 200) {
-          const projectData = res.data.projectInfo || {};
-          const stateArr = projectData.locations?.state || [];
 
-          const newSelectedStates: { [country: string]: string[] } = {};
 
-          // Initialize selected states from API response
-          stateArr.forEach((state: any) => {
-            const country = selectedCountries.find((c) => c.countryId === state.countryId);
-            if (!country || !country.countryId) return;
 
-            const countryName = country.name;
-            if (!newSelectedStates[countryName]) {
-              newSelectedStates[countryName] = [];
-            }
-            newSelectedStates[countryName].push(state.name);
-          });
 
-          setSelectedStates((prev) => ({ ...prev, ...newSelectedStates }));
 
-          // Fetch all states for each selected country
-          for (const country of selectedCountries) {
-            if (country.countryId && !statesByCountry[country.countryId]) {
-              await fetchStatesForCountry(country.countryId);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("FetchStatesForStep3 Error:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch states for Step 3",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingStates(false);
-      }
-    };
 
-    fetchStatesForStep3();
-  }
-}, [step, projectId, selectedCountries, statesByCountry]);
+
+
   // Filter countries based on search term
   const filteredCountries = countries.filter(country =>
     country.name.toLowerCase().includes(countrySearchInput.toLowerCase())
@@ -680,51 +830,52 @@ useEffect(() => {
 
   const handleNextStep = async () => {
     if (step === 1) {
+      const hasProjectDataChanged =
+        projectName !== lastSavedProjectName ||
+        serviceType !== lastSavedServiceType ||
+        wantImages !== lastSavedWantImages;
+
+      if (!projectName || !serviceType) return;
+
+      if (!hasProjectDataChanged && projectId) {
+        setStep(step + 1);
+        return; // Reuse existing projectId, no API call needed
+      }
+
       const admin = JSON.parse(localStorage.getItem("adminProfile") || "{}");
       const payload = {
         userId: admin._id,
         serviceType,
         projectName,
-        wantImages: wantImages ? 1 : 0
+        wantImages: wantImages ? 1 : 0,
       };
 
       console.log("Project payload: ", payload);
       setLoading(1);
 
-      if (projectId && lastSubKey) {
-        const last = JSON.parse(localStorage.getItem(lastSubKey) || "{}");
-        if (
-          last.serviceType === serviceType &&
-          last.projectName === projectName &&
-          last.wantImages === wantImages
-        ) {
-          setLoading(0);
-          setStep(step + 1);
-        }
-      }
-
       try {
         const token = localStorage.getItem("token");
         const res = await httpFile.post("/createProject", payload, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (res.status === 401) {
           toast({
             title: "Error",
             description: "invalid token",
-            variant: "destructive"
+            variant: "destructive",
           });
           localStorage.removeItem("token");
           navigate("/login");
+          return;
         }
+
         if (res.status === 201) {
           const newId = res.data.data._id;
-
           toast({
             title: "Success",
             description: "Project created successfully!",
-            variant: "destructive"
+            variant: "destructive",
           });
 
           localStorage.setItem("lastCreateProjectId", newId);
@@ -738,25 +889,31 @@ useEffect(() => {
             JSON.stringify({ serviceType, projectName, wantImages, projectId: newId })
           );
           localStorage.removeItem("createProjectDraft:new");
-          setLoading(0);
 
+          setLastSavedProjectName(projectName);
+          setLastSavedServiceType(serviceType);
+          setLastSavedWantImages(wantImages);
+
+          setLoading(0);
           setStep(step + 1);
         }
       } catch (err: any) {
         toast({
           title: "Error",
           description: err.response?.data?.message || "An error occurred!",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(0);
       }
-
-      if (!projectName || !serviceType) return;
     } else if (step === 2) {
-      const token = localStorage.getItem("token");
+      const hasCountriesChanged = JSON.stringify(selectedCountries) !== JSON.stringify(lastSavedCountries);
+      if (!hasCountriesChanged) {
+        setStep(step + 1);
+        return;
+      }
 
-      // Define the arrays for country objects with and without countryId
+      const token = localStorage.getItem("token");
       const countriesPayload = selectedCountries.filter(item => item.countryId);
       const manualPayload = selectedCountries.filter(item => !item.countryId);
 
@@ -772,17 +929,17 @@ useEffect(() => {
           data: res.data,
         });
 
-        // Accept more status codes (e.g., 200, 201, 204)
         if ([200, 201, 204].includes(res.status)) {
-          let updatedCountries = selectedCountries; // Fallback to current selectedCountries
+          let updatedCountries = selectedCountries;
           if (res.data?.data && Array.isArray(res.data.data)) {
             updatedCountries = res.data.data.map((item: any) => ({
-              countryId: item.id || item._id || item.countryId, // Handle multiple ID fields
+              countryId: item.id || item._id || item.countryId,
               name: item.name,
               status: selectedCountries.find(c => c.name === item.name)?.status || 0,
             }));
           }
           setSelectedCountries(updatedCountries);
+          setLastSavedCountries(updatedCountries);
           setStep(step + 1);
           toast({
             title: "Success",
@@ -800,22 +957,26 @@ useEffect(() => {
         });
       }
     } else if (step === 3) {
-      const token = localStorage.getItem("token");
+      const hasStatesChanged = JSON.stringify(selectedStates) !== JSON.stringify(lastSavedStates);
+      if (!hasStatesChanged) {
+        setStep(step + 1);
+        return;
+      }
 
-      // Prepare states payload
+      const token = localStorage.getItem("token");
       const statesPayload: { countryId: string; stateId?: string; name: string; status: number }[] = [];
       const manualStatesPayload: { countryId: string; name: string; status: number }[] = [];
 
       Object.entries(selectedStates).forEach(([countryName, stateNames]) => {
         const country = selectedCountries.find((c) => c.name === countryName);
-        if (!country || !country.countryId) return; // Skip if country or countryId is missing
+        if (!country || !country.countryId) return;
         const countryId = country.countryId;
         const countryStates = statesByCountry[countryId] || [];
 
         stateNames.forEach((stateName) => {
           const state = countryStates.find((s: State) => s.name === stateName);
           if (state) {
-            const status = state.status !== undefined ? state.status : 0; // Ensure status is 0 if undefined
+            const status = state.status !== undefined ? state.status : 0;
             if (state.manual) {
               manualStatesPayload.push({
                 countryId,
@@ -834,8 +995,6 @@ useEffect(() => {
         });
       });
 
-      // console.log(statesPayload, manualStatesPayload);return
-
       try {
         const res = await httpFile.post(
           "/updateStateInProject",
@@ -848,6 +1007,7 @@ useEffect(() => {
             title: "Success",
             description: "States updated successfully!",
           });
+          setLastSavedStates(selectedStates);
           setStep(step + 1);
         } else {
           throw new Error("Failed to update states");
@@ -860,9 +1020,13 @@ useEffect(() => {
         });
       }
     } else if (step === 4) {
-      const token = localStorage.getItem("token");
+      const hasCitiesChanged = JSON.stringify(selectedCities) !== JSON.stringify(lastSavedCities);
+      if (!hasCitiesChanged) {
+        setStep(step + 1);
+        return;
+      }
 
-      // Prepare cities payload
+      const token = localStorage.getItem("token");
       const citiesPayload: { stateId: string; cityId?: string; name: string; status: number }[] = [];
       const manualCitiesPayload: { stateId: string; name: string; status: number }[] = [];
 
@@ -913,6 +1077,7 @@ useEffect(() => {
             title: "Success",
             description: "Cities updated successfully!",
           });
+          setLastSavedCities(selectedCities);
           setStep(step + 1);
         } else {
           throw new Error(`Unexpected status code: ${res.status}`);
@@ -925,8 +1090,13 @@ useEffect(() => {
           variant: "destructive",
         });
       }
-
     } else if (step === 5) {
+      const hasLocalAreasChanged = JSON.stringify(localAreas) !== JSON.stringify(lastSavedLocalAreas);
+      if (!hasLocalAreasChanged) {
+        setStep(step + 1);
+        return;
+      }
+
       const formattedData = Object.entries(localAreas).flatMap(([cityName, areas]) => {
         const stateName = Object.keys(selectedCities).find((state) =>
           selectedCities[state].includes(cityName)
@@ -977,8 +1147,8 @@ useEffect(() => {
             title: "Success",
             description: "Local areas updated successfully!",
           });
+          setLastSavedLocalAreas(localAreas);
           setStep(step + 1);
-          resetForm(); // Reset states
         } else {
           throw new Error(`Unexpected status code: ${res.status}`);
         }
@@ -990,182 +1160,58 @@ useEffect(() => {
           variant: "destructive",
         });
         setStep(step + 1);
-        resetForm(); // Reset states even on error
       } finally {
         setSubmitting(false);
       }
+
     } else if (step === 6) {
-      // 1) Ask admin which mode
+      const hasServiceOptionChanged = serviceOption !== lastSavedServiceOption;
+      if (!hasServiceOptionChanged) {
+        setStep(step + 1);
+        return;
+      }
+
       const mode = await Swal.fire({
         title: "How do you want to add services?",
         showDenyButton: true,
         showCancelButton: true,
         confirmButtonText: "📋 Manual Entry",
         denyButtonText: "🤖 AI Services",
-        cancelButtonText: "❌ Cancel"
+        cancelButtonText: "❌ Cancel",
       });
 
       if (mode.isDismissed) {
-        return; // clicked Cancel or outside
-      }
-
-      // 2a) AI branch
-      if (mode.isDenied) {
-        setSubmitting(true);
-        try {
-          const token = localStorage.getItem("token");
-          const payload = { projectId, wantAiServices: 1 };
-          const res = await httpFile.post(
-            "/addServicesToLocation",
-            payload,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              }
-            }
-          );
-          if (res.status === 200) {
-            toast({
-              title: "Success",
-              description: "AI services added successfully!",
-            });
-            setStep(step + 1);
-          } else {
-            toast({
-              title: "Error",
-              description: "Failed to add AI services",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: error.response?.data?.message || "An error occurred while adding AI services!",
-            variant: "destructive",
-          });
-        } finally {
-          setSubmitting(false);
-        }
         return;
       }
 
-      // 2b) Manual branch
-      const manual = await Swal.fire({
-        title: "Enter service names or upload Excel",
-        html: `
-      <textarea id="swal-textarea" class="swal2-textarea"
-        placeholder="One service name per line"></textarea>
-      <input type="file" id="swal-file" class="swal2-file"
-        accept=".xlsx,.xls" />
-    `,
-        focusConfirm: false,
-        preConfirm: () => {
-          const text = document.getElementById("swal-textarea").value
-            .split("\n")
-            .map(l => l.trim())
-            .filter(Boolean);
-
-          const fileInput = document.getElementById("swal-file");
-          const file = fileInput.files[0];
-          // Require at least one source
-          if (!text.length && !file) {
-            Swal.showValidationMessage(
-              "Please enter at least one name or upload an Excel file."
-            );
-          }
-          // If there's a file, parse it and merge
-          if (file) {
-            return new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = e => {
-                try {
-                  const data = new Uint8Array(e.target.result);
-                  const wb = XLSX.read(data, { type: "array" });
-                  const sheet = wb.Sheets[wb.SheetNames[0]];
-                  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                  const fromFile = rows
-                    .map(r => r[0])
-                    .filter(v => typeof v === "string" && v.trim());
-                  resolve([...text, ...fromFile]);
-                } catch (err) {
-                  reject("Failed to parse Excel file.");
-                }
-              };
-              reader.onerror = () => reject("Failed to read file.");
-              reader.readAsArrayBuffer(file);
-            });
-          }
-          return text;
-        }
-      });
-
-      if (manual.isConfirmed) {
-        const servicesArray = manual.value;
-        if (Array.isArray(servicesArray) && servicesArray.length) {
-          setSubmitting(true);
-          try {
-            const token = localStorage.getItem("token");
-            const payload = { projectId, wantAiServices: 0, services: servicesArray };
-            const res = await httpFile.post(
-              "/addServicesToLocation",
-              payload,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                }
-              }
-            );
-            if (res.status === 200) {
-              toast({
-                title: "Success",
-                description: "Manual services added successfully!",
-              });
-              setStep(step + 1);
-            } else {
-              toast({
-                title: "Error",
-                description: "Failed to add manual services",
-                variant: "destructive",
-              });
-            }
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: error.response?.data?.message || "An error occurred while adding manual services!",
-              variant: "destructive",
-            });
-          } finally {
-            setSubmitting(false);
-          }
-        } else {
-          toast({
-            title: "Error",
-            description: "No services to submit.",
-            variant: "destructive",
-          });
-        }
-      }
-    } else if (step === 7) {
-      // Service entry step
-      if (serviceOption === "manual" && !serviceNames.trim()) {
-        toast({
-          title: "Error",
-          description: "Please enter at least one service name",
-          variant: "destructive"
-        });
-        return;
-      }
+      setServiceOption(mode.isDenied ? "ai" : "manual");
+      setLastSavedServiceOption(mode.isDenied ? "ai" : "manual");
       setStep(step + 1);
+    } else if (step === 7) {
+      toast({
+        title: "Error",
+        description: "Please choose a method to add services in Step 7.",
+        variant: "destructive",
+      });
+      return;
     } else if (step === 8) {
-      // About Us step
       if (!aboutUsEmail || !aboutUsPhone || !aboutUsLocation) {
         toast({
           title: "Error",
           description: "Please fill in all required fields",
-          variant: "destructive"
+          variant: "destructive",
         });
+        return;
+      }
+
+      const hasAboutUsChanged =
+        aboutUsEmail !== lastSavedAboutUsEmail ||
+        aboutUsPhone !== lastSavedAboutUsPhone ||
+        aboutUsLocation !== lastSavedAboutUsLocation;
+
+      if (!hasAboutUsChanged) {
+        resetForm(); // Reset form before showing final success
+        setShowFinalSuccess(true);
         return;
       }
 
@@ -1182,7 +1228,6 @@ useEffect(() => {
         );
 
         if ([200, 201, 204].includes(res.status)) {
-          // Clear local storage except for whitelist
           const whitelist = ["adminProfile", "Role", "token"];
           Object.keys(localStorage).forEach(key => {
             if (!whitelist.includes(key)) localStorage.removeItem(key);
@@ -1192,6 +1237,10 @@ useEffect(() => {
             title: "Success",
             description: "About Us information saved successfully!",
           });
+          setLastSavedAboutUsEmail(aboutUsEmail);
+          setLastSavedAboutUsPhone(aboutUsPhone);
+          setLastSavedAboutUsLocation(aboutUsLocation);
+          resetForm(); // Reset form after successful submission
           setShowFinalSuccess(true);
         } else {
           throw new Error("Failed to save About Us information");
@@ -1222,39 +1271,47 @@ useEffect(() => {
   };
 
   const handleCountrySearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && countrySearchInput.trim() !== '') {
+    if (e.key === "Enter" && countrySearchInput.trim() !== "") {
       const trimmedInput = countrySearchInput.trim();
 
       // Check for exact match (case-insensitive)
-      const exactMatch = countries.find(country =>
+      const exactMatch = countries.find((country) =>
         country.name.toLowerCase() === trimmedInput.toLowerCase()
       );
 
+      let updatedCountries;
       if (exactMatch) {
         // Select existing country
-        if (!selectedCountries.some(c => c.name === exactMatch.name)) {
-          setSelectedCountries([...selectedCountries, { ...exactMatch, status: 0 }]);
+        if (!selectedCountries.some((c) => c.name === exactMatch.name)) {
+          updatedCountries = [...selectedCountries, { ...exactMatch, status: 0 }];
+          setSelectedCountries(updatedCountries);
         }
       } else {
         // Add new manual country
         const newCountry: Country = { name: trimmedInput, status: 0 };
         setCountries([...countries, newCountry]);
-        setSelectedCountries([...selectedCountries, newCountry]);
+        updatedCountries = [...selectedCountries, newCountry];
+        setSelectedCountries(updatedCountries);
       }
 
-      setCountrySearchInput('');
+      setLastSavedCountries(updatedCountries || selectedCountries);
+      setCountrySearchInput("");
       setCurrentCountryPage(1); // Reset to first page
     }
   };
 
 
   const toggleState = (countryName: string, stateName: string) => {
-    setSelectedStates((prev) => ({
-      ...prev,
-      [countryName]: prev[countryName]?.includes(stateName)
-        ? prev[countryName].filter((s) => s !== stateName)
-        : [...(prev[countryName] || []), stateName],
-    }));
+    setSelectedStates((prev) => {
+      const updated = {
+        ...prev,
+        [countryName]: prev[countryName]?.includes(stateName)
+          ? prev[countryName].filter((s) => s !== stateName)
+          : [...(prev[countryName] || []), stateName],
+      };
+      setLastSavedStates(updated);
+      return updated;
+    });
   };
 
   const selectAllStates = (countryName: string) => {
@@ -1302,10 +1359,14 @@ useEffect(() => {
       if (existingCity) {
         // Select existing city if not already selected
         if (!selectedCities[stateName]?.includes(existingCity.name)) {
-          setSelectedCities((prev) => ({
-            ...prev,
-            [stateName]: [...(prev[stateName] || []), existingCity.name],
-          }));
+          setSelectedCities((prev) => {
+            const updated = {
+              ...prev,
+              [stateName]: [...(prev[stateName] || []), existingCity.name],
+            };
+            setLastSavedCities(updated);
+            return updated;
+          });
         }
       } else {
         // Add manual city
@@ -1317,11 +1378,16 @@ useEffect(() => {
         // Only add to selectedCities if it doesn't already exist
         setSelectedCities((prev) => {
           const currentCities = prev[stateName] || [];
-          if (currentCities.includes(newCityName)) return prev; // Prevent duplicate
-          return {
+          if (currentCities.includes(newCityName)) {
+            setLastSavedCities(prev);
+            return prev; // Prevent duplicate
+          }
+          const updated = {
             ...prev,
             [stateName]: [...currentCities, newCityName],
           };
+          setLastSavedCities(updated);
+          return updated;
         });
       }
 
@@ -1361,9 +1427,12 @@ useEffect(() => {
   };
 
   const selectCountryFromList = (countryName: string) => {
-    const country = countries.find(c => c.name === countryName);
-    if (country && !selectedCountries.some(c => c.name === country.name)) {
-      setSelectedCountries([...selectedCountries, { ...country, status: 0 }]);
+    const country = countries.find((c) => c.name === countryName);
+    if (country && !selectedCountries.some((c) => c.name === country.name)) {
+      const updatedCountries = [...selectedCountries, { ...country, status: 0 }];
+      setSelectedCountries(updatedCountries);
+      // Update lastSavedCountries to prevent unnecessary API calls
+      setLastSavedCountries(updatedCountries);
     }
   };
 
@@ -1378,12 +1447,16 @@ useEffect(() => {
 
 
   const toggleCity = (stateName: string, cityName: string) => {
-    setSelectedCities((prev) => ({
-      ...prev,
-      [stateName]: prev[stateName]?.includes(cityName)
-        ? prev[stateName].filter((c) => c !== cityName)
-        : [...(prev[stateName] || []), cityName],
-    }));
+    setSelectedCities((prev) => {
+      const updated = {
+        ...prev,
+        [stateName]: prev[stateName]?.includes(cityName)
+          ? prev[stateName].filter((c) => c !== cityName)
+          : [...(prev[stateName] || []), cityName],
+      };
+      setLastSavedCities(updated);
+      return updated;
+    });
   };
 
   const selectAllCountries = () => {
@@ -1477,7 +1550,122 @@ useEffect(() => {
     setAboutUsEmail("");
     setAboutUsPhone("");
     setAboutUsLocation("");
+    setLastSavedCountries([]);
+    setLastSavedStates({});
+    setLastSavedCities({});
+    setLastSavedLocalAreas({});
+    setLastSavedProjectName("");
+    setLastSavedServiceType("");
+    setLastSavedWantImages(false);
+    setLastSavedServiceOption("");
+    setLastSavedServiceNames("");
+    setLastSavedAboutUsEmail("");
+    setLastSavedAboutUsPhone("");
+    setLastSavedAboutUsLocation("");
   };
+
+
+ const handleManualServiceEntry = async () => {
+  const manual = await Swal.fire({
+    title: "Enter Service Names or Upload Excel",
+    html: `
+      <textarea id="swal-textarea" class="swal2-textarea"
+        placeholder="One service name per line"></textarea>
+      <input type="file" id="swal-file" class="swal2-file"
+        accept=".xlsx,.xls" />
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      const text = (document.getElementById("swal-textarea") as HTMLTextAreaElement).value
+        .split("\n")
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      const fileInput = document.getElementById("swal-file") as HTMLInputElement;
+      const file = fileInput.files?.[0];
+      if (!text.length && !file) {
+        Swal.showValidationMessage(
+          "Please enter at least one name or upload an Excel file."
+        );
+      }
+      if (file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            try {
+              const data = new Uint8Array(e.target.result as ArrayBuffer);
+              const wb = XLSX.read(data, { type: "array" });
+              const sheet = wb.Sheets[wb.SheetNames[0]];
+              const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+              const fromFile = rows
+                .map(r => r[0])
+                .filter(v => typeof v === "string" && v.trim());
+              resolve([...text, ...fromFile]);
+            } catch (err) {
+              reject("Failed to parse Excel file.");
+            }
+          };
+          reader.onerror = () => reject("Failed to read file.");
+          reader.readAsArrayBuffer(file);
+        });
+      }
+      return text;
+    },
+  });
+
+  if (manual.isConfirmed) {
+    const servicesArray = manual.value;
+    if (Array.isArray(servicesArray) && servicesArray.length) {
+      setSubmitting(true);
+      try {
+        const token = localStorage.getItem("token");
+        const payload = { projectId, wantAiServices: 0, services: servicesArray };
+        const res = await httpFile.post(
+          "/addServicesToLocation",
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (res.status === 200) {
+          toast({
+            title: "Success",
+            description: "Manual services added successfully!",
+          });
+          setLastSavedServiceOption("manual");
+          setLastSavedServiceNames(servicesArray.join("\n"));
+          setStep(step + 1);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add manual services",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "An error occurred while adding manual services!",
+          variant: "destructive",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "No services to submit.",
+        variant: "destructive",
+      });
+    }
+  }
+};
+
+
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -1703,20 +1891,20 @@ useEffect(() => {
                         </div>
                         <div className="space-y-2">
                           {filteredStates.map((state: State) => (
-                            <div
-                              key={state.id || state.name}
-                              className="flex items-center justify-between"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => toggleState(country.name, state.name)}
-                                className="flex-1 text-left text-sm font-medium cursor-pointer hover:text-blue-600"
-                              >
-                                {state.name}
-                                {selectedStates[country.name]?.includes(state.name) && (
-                                  <span className="ml-2 text-green-600">✓ Selected</span>
-                                )}
-                              </button>
+                            <div key={state.id || state.name} className="border p-3 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                              <div className="flex items-center justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleState(country.name, state.name)}
+                                  className="flex-1 text-left text-sm font-medium cursor-pointer hover:text-blue-600"
+                                  disabled={selectedStates[country.name]?.includes(state.name)}
+                                >
+                                  {state.name}
+                                  {selectedStates[country.name]?.includes(state.name) && (
+                                    <span className="ml-2 text-green-600">✓ Selected</span>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1730,75 +1918,26 @@ useEffect(() => {
                     <div className="mt-4">
                       <h4 className="text-sm font-medium mb-2">Selected States ({selectedStates[country.name]?.length || 0})</h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-
-                        {filteredStates.length > 0 ? (
-                          <div className="border rounded-lg p-4 max-h-96 overflow-y-auto mt-4">
-                            <div className="flex space-x-2 mb-3">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => selectAllStates(country.name)}
-                              >
-                                Select All
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deselectAllStates(country.name)}
-                              >
-                                Deselect All
-                              </Button>
-                            </div>
-                            <div className="space-y-2">
-                              {filteredStates.map((state: State) => (
-                                <div key={state.id || state.name} className="flex items-center justify-between p-3 bg-white rounded border">
+                        {selectedStates[country.name]?.length > 0 ? (
+                          selectedStates[country.name].map((stateName) => {
+                            const state = statesByCountry[countryId]?.find((s: State) => s.name === stateName);
+                            return (
+                              <div key={stateName} className="flex items-center justify-between p-3 bg-white rounded border">
+                                <span className="font-medium">{stateName}</span>
+                                <div className="flex items-center space-x-3">
                                   <div className="flex items-center space-x-2">
                                     <Checkbox
-                                      id={`select-${country.name}-${state.name}`}
-                                      checked={selectedStates[country.name]?.includes(state.name)}
-                                      onCheckedChange={() => toggleState(country.name, state.name)}
+                                      id={`page-${country.name}-${stateName}`}
+                                      checked={state?.status === 1}
+                                      onCheckedChange={() => toggleStatePageCreation(country.name, stateName)}
                                     />
                                     <label
-                                      htmlFor={`select-${country.name}-${state.name}`}
-                                      className="text-sm font-medium cursor-pointer"
+                                      htmlFor={`page-${country.name}-${stateName}`}
+                                      className="text-xs text-blue-600 cursor-pointer"
                                     >
-                                      {state.name}
+                                      Create page
                                     </label>
                                   </div>
-                                  <div className="flex items-center space-x-3">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={`page-${country.name}-${state.name}`}
-                                        checked={state.status === 1}
-                                        onCheckedChange={() => toggleStatePageCreation(country.name, state.name)}
-                                      />
-                                      <label
-                                        htmlFor={`page-${country.name}-${state.name}`}
-                                        className="text-xs text-blue-600 cursor-pointer"
-                                      >
-                                        Create page
-                                      </label>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : stateInput[country.name]?.trim() ? (
-                          <div className="text-sm text-gray-500 mt-2">No matching states found</div>
-                        ) : (
-                          <div className="text-sm text-gray-500 mt-2">No states available</div>
-                        )}
-
-                        <div className="mt-4">
-                          <h4 className="text-sm font-medium mb-2">Selected States ({selectedStates[country.name]?.length || 0})</h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {selectedStates[country.name]?.length > 0 ? (
-                              selectedStates[country.name].map((stateName) => (
-                                <div key={stateName} className="flex items-center justify-between p-3 bg-white rounded border">
-                                  <span className="font-medium">{stateName}</span>
                                   <button
                                     type="button"
                                     onClick={() => toggleState(country.name, stateName)}
@@ -1807,13 +1946,12 @@ useEffect(() => {
                                     <X className="h-4 w-4" />
                                   </button>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="text-center p-4 text-gray-500 text-sm">No states selected</div>
-                            )}
-                          </div>
-                        </div>
-
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center p-4 text-gray-500 text-sm">No states selected</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1851,27 +1989,27 @@ useEffect(() => {
                         <Label>Search or Add City</Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                         
 
 
 
-<Input
-  placeholder={`Search or add city for ${state}`}
-  value={cityInput[state] || ""}
-  onChange={(e) => {
-    setCityInput({ ...cityInput, [state]: e.target.value });
-    if (!citiesByState[state]) {
-      fetchCitiesForState(stateId, state, e.target.value);
-    }
-  }}
-  onKeyDown={(e) => handleCityKeyDown(state, e)}
-  onFocus={() => {
-    if (!citiesByState[state]) {
-      fetchCitiesForState(stateId, state, cityInput[state] || "");
-    }
-  }}
-  className="pl-10"
-/>
+
+                          <Input
+                            placeholder={`Search or add city for ${state}`}
+                            value={cityInput[state] || ""}
+                            onChange={(e) => {
+                              setCityInput({ ...cityInput, [state]: e.target.value });
+                              if (!citiesByState[state]) {
+                                fetchCitiesForState(stateId, state, e.target.value);
+                              }
+                            }}
+                            onKeyDown={(e) => handleCityKeyDown(state, e)}
+                            onFocus={() => {
+                              if (!citiesByState[state]) {
+                                fetchCitiesForState(stateId, state, cityInput[state] || "");
+                              }
+                            }}
+                            className="pl-10"
+                          />
 
 
 
@@ -1890,99 +2028,101 @@ useEffect(() => {
 
 
 
+                      {filteredCities.length > 0 ? (
+                        <div className="border rounded-lg p-4 max-h-96 overflow-y-auto mt-4">
+                          <div className="flex space-x-2 mb-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => selectAllCities(state)}
+                            >
+                              Select All
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deselectAllCities(state)}
+                            >
+                              Deselect All
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {filteredCities.map((city: City) => (
+                              <div key={city.id || city.name} className="border p-3 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <div className="flex items-center justify-between">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCity(state, city.name)}
+                                    className="flex-1 text-left text-sm font-medium cursor-pointer hover:text-blue-600"
+                                    disabled={selectedCities[state]?.includes(city.name)}
+                                  >
+                                    {city.name}
+                                    {selectedCities[state]?.includes(city.name) && (
+                                      <span className="ml-2 text-green-600">✓ Selected</span>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : cityInput[state]?.trim() ? (
+                        <div className="text-sm text-gray-500 mt-2">No matching cities found</div>
+                      ) : (
+                        <div className="text-sm text-gray-500 mt-2">No cities available</div>
+                      )}
 
-{filteredCities.length > 0 ? (
-  <div className="border rounded-lg p-4 max-h-96 overflow-y-auto mt-4">
-    <div className="flex space-x-2 mb-3">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => selectAllCities(state)}
-      >
-        Select All
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => deselectAllCities(state)}
-      >
-        Deselect All
-      </Button>
-    </div>
-    <div className="space-y-2">
-      {filteredCities.map((city: City) => (
-        <div key={city.id || city.name} className="flex items-center justify-between p-3 bg-white rounded border">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id={`select-${state}-${city.name}`}
-              checked={selectedCities[state]?.includes(city.name)}
-              onCheckedChange={() => toggleCity(state, city.name)}
-            />
-            <label
-              htmlFor={`select-${state}-${city.name}`}
-              className="text-sm font-medium cursor-pointer"
-            >
-              {city.name}
-            </label>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id={`page-${state}-${city.name}`}
-                checked={city.status === 1}
-                onCheckedChange={() => toggleCityPageCreation(state, city.name)}
-              />
-              <label
-                htmlFor={`page-${state}-${city.name}`}
-                className="text-xs text-blue-600 cursor-pointer"
-              >
-                Create page
-              </label>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-) : cityInput[state]?.trim() ? (
-  <div className="text-sm text-gray-500 mt-2">No matching cities found</div>
-) : (
-  <div className="text-sm text-gray-500 mt-2">No cities available</div>
-)}
-
-<div className="mt-4">
-  <h4 className="text-sm font-medium mb-2">Selected Cities ({selectedCities[state]?.length || 0})</h4>
-  <div className="space-y-2 max-h-64 overflow-y-auto">
-    {selectedCities[state]?.length > 0 ? (
-      selectedCities[state].map((cityName) => (
-        <div key={cityName} className="flex items-center justify-between p-3 bg-white rounded border">
-          <span className="font-medium">{cityName}</span>
-          <button
-            type="button"
-            onClick={() => toggleCity(state, cityName)}
-            className="text-gray-500 hover:text-red-500"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))
-    ) : (
-      <div className="text-center p-4 text-gray-500 text-sm">No cities selected</div>
-    )}
-  </div>
-</div>
-
-
-
-
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium mb-2">Selected Cities ({selectedCities[state]?.length || 0})</h4>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {selectedCities[state]?.length > 0 ? (
+                            selectedCities[state].map((cityName) => {
+                              const city = citiesByState[state]?.find((c: City) => c.name === cityName);
+                              return (
+                                <div key={cityName} className="flex items-center justify-between p-3 bg-white rounded border">
+                                  <span className="font-medium">{cityName}</span>
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`page-${state}-${cityName}`}
+                                        checked={city?.status === 1}
+                                        onCheckedChange={() => toggleCityPageCreation(state, cityName)}
+                                      />
+                                      <label
+                                        htmlFor={`page-${state}-${cityName}`}
+                                        className="text-xs text-blue-600 cursor-pointer"
+                                      >
+                                        Create page
+                                      </label>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleCity(state, cityName)}
+                                      className="text-gray-500 hover:text-red-500"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-center p-4 text-gray-500 text-sm">No cities selected</div>
+                          )}
+                        </div>
+                      </div>
 
 
 
 
 
-                  
+
+
+
+
+
                     </div>
                   );
                 })
@@ -2086,8 +2226,7 @@ useEffect(() => {
                     >
                       <span className="font-medium">{country.name}</span>
                       <span
-                        className={`text-xs px-2 py-1 rounded ${country.status === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                          }`}
+                        className={`text-xs px-2 py-1 rounded ${country.status === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {country.status === 1 ? "Page will be created" : "No page"}
                       </span>
@@ -2129,8 +2268,8 @@ useEffect(() => {
                                           {localAreas[city]?.length > 0 && (
                                             <div className="flex flex-wrap gap-1 ml-4 mt-1">
                                               {localAreas[city].map((area) => (
-                                                <Badge key={area} variant="outline" className="text-xs">
-                                                  {area}
+                                                <Badge key={area.id} variant="outline" className="text-xs">
+                                                  {area.name}
                                                 </Badge>
                                               ))}
                                             </div>
@@ -2157,63 +2296,88 @@ useEffect(() => {
           </div>
         );
       case 7:
-        // Manual service entry
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium">
-              {serviceOption === "manual" ? "Manual Service Entry" : "AI Service Generation"}
-            </h3>
-
-            {serviceOption === "manual" ? (
-              <>
-                <div className="space-y-4">
-                  <Label htmlFor="serviceNames">Enter service names or upload Excel</Label>
-                  <div className="text-xs text-gray-500 mb-2">One service name per line</div>
-                  <Textarea
-                    id="serviceNames"
-                    placeholder="Enter one service per line"
-                    className="min-h-[150px]"
-                    value={serviceNames}
-                    onChange={(e) => setServiceNames(e.target.value)}
-                  />
+            <h3 className="text-lg font-medium">Choose How to Add Services</h3>
+            <p className="text-gray-500">Select a method to add services to your project. You can either let our AI generate services automatically or input them manually.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Option 1: Generate AI-based Services */}
+              <div className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Bot className="h-8 w-8 text-blue-500" />
+                  <h4 className="text-lg font-semibold text-gray-800">Generate AI-based Services</h4>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fileUpload" className="block">Choose file</Label>
-                  <div className="flex items-center">
-                    <Input
-                      id="fileUpload"
-                      type="file"
-                      accept=".xlsx,.xls,.csv"
-                      onChange={handleFileUpload}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-center p-10 border-2 border-dashed rounded-lg">
-                <Bot className="h-12 w-12 mx-auto text-blue-500 mb-4" />
-                <h3 className="text-lg font-medium mb-2">AI Service Generation</h3>
-                <p className="text-gray-500 mb-4">
-                  Our AI will analyze your project details and suggest appropriate services.
+                <p className="text-sm text-gray-600 mb-4">
+                  Let our AI analyze your project details (like project name, service type, and locations) and automatically generate relevant service titles tailored to your needs.
                 </p>
-                <div className="flex justify-center">
-                  <Button
-                    type="button"
-                    onClick={() => {
+                <Button
+                  type="button"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={async () => {
+                    setSubmitting(true);
+                    try {
+                      const token = localStorage.getItem("token");
+                      const payload = { projectId, wantAiServices: 1 };
+                      const res = await httpFile.post(
+                        "/addServicesToLocation",
+                        payload,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                          },
+                        }
+                      );
+                      if (res.status === 200) {
+                        toast({
+                          title: "Success",
+                          description: "AI services added successfully!",
+                        });
+                        setLastSavedServiceOption("ai");
+                        setLastSavedServiceNames("");
+                        setStep(step + 1);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Failed to add AI services",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
                       toast({
-                        title: "AI Services Generated",
-                        description: "10 services have been generated based on your project",
+                        title: "Error",
+                        description: error.response?.data?.message || "An error occurred while adding AI services!",
+                        variant: "destructive",
                       });
-                      setStep(8);
-                    }}
-                  >
-                    Generate Services
-                  </Button>
-                </div>
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  disabled={submitting}
+                >
+                  {submitting ? "Generating..." : "Generate AI Services"}
+                </Button>
               </div>
-            )}
+
+              {/* Option 2: Generate Services Manually */}
+              <div className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center space-x-3 mb-4">
+                  <ClipboardList className="h-8 w-8 text-green-500" />
+                  <h4 className="text-lg font-semibold text-gray-800">Generate Services Manually</h4>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Take control by manually entering service titles that best represent your offerings. You can type each service name individually or upload an Excel file containing a list of service titles.
+                </p>
+                <Button
+                  type="button"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleManualServiceEntry}
+                  disabled={submitting}
+                >
+                  {submitting ? "Processing..." : "Add Services Manually"}
+                </Button>
+              </div>
+            </div>
           </div>
         );
       case 8:
