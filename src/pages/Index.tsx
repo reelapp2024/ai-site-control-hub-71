@@ -6,7 +6,7 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { AIModelConfig } from "@/components/admin/AIModelConfig";
 import { Analytics } from "@/components/admin/Analytics";
 import { Settings } from "@/components/admin/Settings";
-import { CreateProject } from "@/components/admin/CreateProject";
+import CreateProject from "@/components/admin/CreateProject";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { SubAdminManagement } from "@/components/admin/SubAdminManagement";
 import { ThemesManagement } from "@/components/admin/ThemesManagement";

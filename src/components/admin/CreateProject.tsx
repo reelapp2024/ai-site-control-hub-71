@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -46,7 +45,7 @@ import { Separator } from "@/components/ui/separator"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, RotateCcw } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
 import {
   Command,
@@ -82,7 +81,6 @@ import { getCategories } from "@/lib/api/categories";
 import { Editor } from "@/components/ui/editor"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { ReloadIcon } from "@radix-ui/react-icons"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { useDebounce } from "@/hooks/use-debounce";
 import { getTags } from "@/lib/api/tags";
@@ -167,10 +165,24 @@ const CreateProject = () => {
     mutationFn: async (data: ProjectFormValues) => {
       setIsSaving(true);
       setProgress(70);
+      
+      // Convert dates to strings for API
+      const apiData = {
+        ...data,
+        startDate: data.startDate.toISOString(),
+        endDate: data.endDate ? data.endDate.toISOString() : undefined,
+        tags: selectedTags,
+        // Ensure all required fields are present
+        title: data.title || '',
+        description: data.description || '',
+        content: data.content || '',
+        categoryId: data.categoryId || '',
+      };
+
       if (projectId) {
-        return updateProject(projectId, { ...data, tags: selectedTags });
+        return updateProject(projectId, apiData);
       }
-      return createProject({ ...data, tags: selectedTags });
+      return createProject(apiData);
     },
     onSuccess: () => {
       setProgress(100);
@@ -513,7 +525,7 @@ const CreateProject = () => {
                 <Button type="submit" disabled={isSaving}>
                   {isSaving ? (
                     <>
-                      Saving <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
+                      Saving <RotateCcw className="ml-2 h-4 w-4 animate-spin" />
                     </>
                   ) : (
                     'Save'
