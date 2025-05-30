@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
+import { WebsiteManagement } from "@/components/admin/WebsiteManagement";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { AIModelConfig } from "@/components/admin/AIModelConfig";
+import { Analytics } from "@/components/admin/Analytics";
 import { Settings } from "@/components/admin/Settings";
 import { CreateProject } from "@/components/admin/CreateProject";
 import { ProjectList } from "@/components/admin/ProjectList";
@@ -85,6 +88,8 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
         return <CreateProject />;
       case "project-list":
         return <ProjectList />;
+      case "websites":
+        return <WebsiteManagement />;
       case "hosting":
         return <HostingDashboard />;
       case "domain-management":
@@ -111,6 +116,10 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
         return <PostTagsManagement />;
       case "credits":
         return <CreditManagement />;
+      case "ai-models":
+        return <AIModelConfig />;
+      case "analytics":
+        return <Analytics />;
       case "settings":
         return <Settings />;
       default:

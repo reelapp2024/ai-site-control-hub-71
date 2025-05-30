@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -43,6 +42,7 @@ const getBaseSidebarItems = () => [
       { id: "project-list", label: "Project List", icon: ListTodo },
     ]
   },
+  { id: "websites", label: "Websites", icon: Globe },
   { id: "hosting", label: "Hosting", icon: Server },
   { 
     id: "domains", 
@@ -64,6 +64,8 @@ const getBaseSidebarItems = () => [
   { id: "themes", label: "Themes", icon: Palette },
   { id: "plugins", label: "Plugins", icon: Plug },
   { id: "credits", label: "Credits", icon: Coins },
+  { id: "ai-models", label: "AI Models", icon: Bot },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -93,15 +95,15 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
     const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
     
     if (isPluginActive) {
-      // Insert content management items after hosting
+      // Insert content management items after websites
       const baseItems = getBaseSidebarItems();
-      const hostingIndex = baseItems.findIndex(item => item.id === "hosting");
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
       
-      if (hostingIndex !== -1) {
+      if (websiteIndex !== -1) {
         const newItems = [...baseItems];
         const contentItems = getContentManagementItems();
         // Insert after hosting
-        newItems.splice(hostingIndex + 1, 0, ...contentItems);
+        newItems.splice(websiteIndex + 2, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     } else {
@@ -119,12 +121,12 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
         if (isPluginActive) {
           // Add content management items
           const baseItems = getBaseSidebarItems();
-          const hostingIndex = baseItems.findIndex(item => item.id === "hosting");
+          const websiteIndex = baseItems.findIndex(item => item.id === "websites");
           
-          if (hostingIndex !== -1) {
+          if (websiteIndex !== -1) {
             const newItems = [...baseItems];
             const contentItems = getContentManagementItems();
-            newItems.splice(hostingIndex + 1, 0, ...contentItems);
+            newItems.splice(websiteIndex + 2, 0, ...contentItems);
             setSidebarItems(newItems);
           }
         } else {
@@ -138,12 +140,12 @@ export function AdminSidebar({ activeSection, setActiveSection }: AdminSidebarPr
     const isPluginActive = localStorage.getItem("website-generator-plugin-active") === "true";
     if (isPluginActive) {
       const baseItems = getBaseSidebarItems();
-      const hostingIndex = baseItems.findIndex(item => item.id === "hosting");
+      const websiteIndex = baseItems.findIndex(item => item.id === "websites");
       
-      if (hostingIndex !== -1) {
+      if (websiteIndex !== -1) {
         const newItems = [...baseItems];
         const contentItems = getContentManagementItems();
-        newItems.splice(hostingIndex + 1, 0, ...contentItems);
+        newItems.splice(websiteIndex + 2, 0, ...contentItems);
         setSidebarItems(newItems);
       }
     }
