@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
@@ -24,11 +23,15 @@ import { CreditManagement } from "@/components/admin/CreditManagement";
 import { HostingDashboard } from "@/components/admin/HostingDashboard";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
-const Index = () => {
+interface IndexProps {
+  initialSection?: string;
+}
+
+const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [currentPostId, setCurrentPostId] = useState<string | undefined>(undefined);
 
@@ -49,6 +52,9 @@ const Index = () => {
       } else {
         setCurrentPostId(undefined);
       }
+    } else if (location.pathname === "/admin/project-list") {
+      setActiveSection("project-list");
+      setIsEditingPost(false);
     }
   }, [location.pathname]);
 
@@ -57,6 +63,10 @@ const Index = () => {
     if (section === "posts") {
       navigate("/posts");
       setActiveSection("posts");
+      setIsEditingPost(false);
+    } else if (section === "project-list") {
+      navigate("/admin/project-list");
+      setActiveSection("project-list");
       setIsEditingPost(false);
     } else {
       setActiveSection(section);

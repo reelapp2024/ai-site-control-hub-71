@@ -529,7 +529,7 @@ export function CreateProject() {
 
       return () => clearTimeout(timer);
     } else if (showFinalSuccess && redirectCounter === 0) {
-      navigate("/admin/Project_listing");
+      navigate("/admin/project-list");
     }
   }, [showFinalSuccess, redirectCounter, navigate]);
 
@@ -542,7 +542,7 @@ export function CreateProject() {
 
       return () => clearTimeout(timer);
     } else if (showFinalSuccess && redirectCounter === 0) {
-      navigate("/admin/Project_listing");
+      navigate("/admin/project-list");
     }
   }, [showFinalSuccess, redirectCounter, navigate]);
 
@@ -2579,9 +2579,16 @@ export function CreateProject() {
                 Redirecting in <span className="font-bold">{redirectCounter}</span> seconds…
               </div>
 
-              <Button onClick={() => navigate("/admin/Project_listing")}>
+              <Button onClick={() => navigate("/admin/project-list")}>
                 Go to project listing page
               </Button>
+
+
+           
+
+
+
+
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PostEditor } from "./components/admin/PostEditor";
-import Login from "./pages/Login"
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +19,7 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Index />} />
-
+          <Route path="/admin/project-list" element={<Index initialSection="project-list" />} />
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Index />} />
           <Route path="/post-editor" element={<Index />} />
