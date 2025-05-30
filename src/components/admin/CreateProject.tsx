@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -13,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import {
   Select,
   SelectContent,
@@ -82,7 +83,6 @@ import { Editor } from "@/components/ui/editor"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { ReloadIcon } from "@radix-ui/react-icons"
-import { InputWithCopyButton } from "@/components/ui/input-copy"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { useDebounce } from "@/hooks/use-debounce";
 import { getTags } from "@/lib/api/tags";
@@ -144,25 +144,26 @@ const CreateProject = () => {
     queryKey: ['project', projectId],
     queryFn: () => getProject(projectId as string),
     enabled: !!projectId,
-    onSuccess: (data) => {
-      if (data) {
-        setValue('title', data.title);
-        setValue('description', data.description);
-        setValue('content', data.content);
-        setContent(data.content);
-        setValue('link', data.link || '');
-        setValue('githubLink', data.githubLink || '');
-        setValue('startDate', new Date(data.startDate));
-        setValue('endDate', data.endDate ? new Date(data.endDate) : null);
-        setValue('isFeatured', data.isFeatured);
-        setValue('isPublished', data.isPublished);
-        setValue('categoryId', data.categoryId);
-        setSelectedTags(data.tags || []);
-      }
-    },
   });
 
-  const { mutate: saveProject, isLoading: isProjectSaving } = useMutation({
+  React.useEffect(() => {
+    if (projectData) {
+      setValue('title', projectData.title);
+      setValue('description', projectData.description);
+      setValue('content', projectData.content);
+      setContent(projectData.content);
+      setValue('link', projectData.link || '');
+      setValue('githubLink', projectData.githubLink || '');
+      setValue('startDate', new Date(projectData.startDate));
+      setValue('endDate', projectData.endDate ? new Date(projectData.endDate) : null);
+      setValue('isFeatured', projectData.isFeatured);
+      setValue('isPublished', projectData.isPublished);
+      setValue('categoryId', projectData.categoryId);
+      setSelectedTags(projectData.tags || []);
+    }
+  }, [projectData, setValue]);
+
+  const { mutate: saveProject, isPending: isProjectSaving } = useMutation({
     mutationFn: async (data: ProjectFormValues) => {
       setIsSaving(true);
       setProgress(70);
@@ -193,48 +194,36 @@ const CreateProject = () => {
     },
   });
 
-  const { refetch: fetchCategories } = useQuery({
+  const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
-    onSuccess: (data) => {
-      const categories = data.map((category) => ({
+  });
+
+  React.useEffect(() => {
+    if (categoriesData) {
+      const categories = categoriesData.map((category) => ({
         value: category.id,
         label: category.name,
       }))
       setCategoriesList(categories);
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: error?.message || "Failed to fetch categories.",
-      })
-    },
-  });
+    }
+  }, [categoriesData]);
 
-  const { refetch: fetchTags } = useQuery({
+  const { data: tagsData, refetch: fetchTags } = useQuery({
     queryKey: ['tags'],
     queryFn: getTags,
-    onSuccess: (data) => {
-      const tags = data.map((tag) => ({
+    enabled: false,
+  });
+
+  React.useEffect(() => {
+    if (tagsData) {
+      const tags = tagsData.map((tag) => ({
         value: tag.id,
         label: tag.name,
       }))
       setTagsList(tags);
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error!",
-        description: error?.message || "Failed to fetch tags.",
-      })
-    },
-    enabled: false,
-  });
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    }
+  }, [tagsData]);
 
   useEffect(() => {
     if (debouncedContent) {
@@ -414,18 +403,24 @@ const CreateProject = () => {
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="categoryId">Category</Label>
-                <Select onValueChange={(value) => setValue('categoryId', value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriesList?.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoriesList?.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.categoryId && (
                   <p className="text-sm text-red-500">{errors.categoryId.message}</p>
                 )}
@@ -488,8 +483,6 @@ const CreateProject = () => {
         return null;
     }
   };
-
-  const [state, setState] = useState('');
 
   return (
     <div className="space-y-6">
