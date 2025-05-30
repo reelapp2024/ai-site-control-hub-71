@@ -233,7 +233,7 @@ export function ProjectList() {
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuContent align="end" className="w-40 bg-white shadow-lg border">
                     <DropdownMenuItem onClick={() => handleVisitLocalSite(project._id)}>
                       <i className="fas fa-laptop-code mr-2 h-4 w-4" />
                       Visit Local Site
