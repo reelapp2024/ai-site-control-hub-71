@@ -1,6 +1,6 @@
 import axios from "axios";
-const apiUrl = "https://aibackend.todaystrends.site/admin/v1/"
-// const apiUrl = "http://localhost:1111/admin/v1/"
+// const apiUrl = "https://aibackend.todaystrends.site/admin/v1/"
+const apiUrl = "http://localhost:1111/admin/v1/"
 
 export const http = axios.create({
   baseURL: apiUrl,  // Fix: Add a colon after "http"
