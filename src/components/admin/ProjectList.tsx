@@ -121,7 +121,7 @@ export function ProjectList() {
   };
 
   const handleVisitServices = (id) => {
-    navigate(`/admin/project/${id}/services`);
+    navigate(`/services/${id}`);
   };
 
   const handleUpdateProject = (id) => {
