@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,10 +51,6 @@ import {
   X,
   Wand2,
   Settings,
-  LayoutDashboard,
-  Users,
-  Globe,
-  BarChart3,
   Zap
 } from 'lucide-react';
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -69,6 +66,7 @@ interface Service {
 }
 
 const Services = () => {
+  const { projectId } = useParams();
   const [services, setServices] = useState<Service[]>([
     {
       id: '1',
@@ -249,7 +247,7 @@ const Services = () => {
                         Service Management
                       </h1>
                       <p className="text-sm text-purple-600 dark:text-purple-300">
-                        Manage your services and offerings
+                        Manage services for Project ID: {projectId}
                       </p>
                     </div>
                   </div>
@@ -357,12 +355,12 @@ const Services = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[100px]">Icon</TableHead>
+                          <TableHead className="w-[80px]">Icon</TableHead>
                           <TableHead>Service Name</TableHead>
                           <TableHead className="hidden md:table-cell">Description</TableHead>
                           <TableHead className="hidden sm:table-cell">Status</TableHead>
                           <TableHead className="hidden lg:table-cell">Created</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead className="text-right w-[100px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -396,24 +394,24 @@ const Services = () => {
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
+                                <DropdownMenuContent align="end" className="w-40">
                                   <DropdownMenuItem 
                                     onClick={() => handlePreview(service)}
-                                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="cursor-pointer"
                                   >
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => handleEdit(service)}
-                                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="cursor-pointer"
                                   >
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => handleDelete(service)}
-                                    className="cursor-pointer text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="cursor-pointer text-red-600"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
@@ -605,7 +603,7 @@ const Services = () => {
           <div className="space-y-6">
             
             {/* Manual Entry Option */}
-            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-blue-50/50 dark:bg-blue-950/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                   <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -658,13 +656,13 @@ const Services = () => {
                   disabled={!manualServices.trim() && !selectedFile}
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                  Add Services
+                  OK
                 </Button>
               </div>
             </div>
 
             {/* AI Services Option */}
-            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-purple-50/50 dark:bg-purple-950/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                   <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />

@@ -50,7 +50,10 @@ export function CreateProject() {
   const [lastSavedAboutUsEmail, setLastSavedAboutUsEmail] = useState("");
   const [lastSavedAboutUsPhone, setLastSavedAboutUsPhone] = useState("");
   const [lastSavedAboutUsLocation, setLastSavedAboutUsLocation] = useState("");
-
+  const [capacity, setCapacity] = useState(0);
+  const [throughput, setThroughput] = useState(0);
+  const [latency, setLatency] = useState(0);
+  const [responseTime, setResponseTime] = useState(0);
 
   const [fetchedCountries, setFetchedCountries] = useState(false);
   const [fetchedStates, setFetchedStates] = useState(false);
@@ -1989,10 +1992,6 @@ export function CreateProject() {
                         <Label>Search or Add City</Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-
-
-
                           <Input
                             placeholder={`Search or add city for ${state}`}
                             value={cityInput[state] || ""}
@@ -2010,12 +2009,6 @@ export function CreateProject() {
                             }}
                             className="pl-10"
                           />
-
-
-
-
-
-
                         </div>
                         <p className="text-xs text-gray-500">
                           Type to search existing cities or enter a new city name and press Enter to add it
@@ -2023,10 +2016,6 @@ export function CreateProject() {
                       </div>
 
                       {loading && <div className="text-sm text-gray-500">Loading cities...</div>}
-
-
-
-
 
                       {filteredCities.length > 0 ? (
                         <div className="border rounded-lg p-4 max-h-96 overflow-y-auto mt-4">
@@ -2113,16 +2102,6 @@ export function CreateProject() {
                           )}
                         </div>
                       </div>
-
-
-
-
-
-
-
-
-
-
                     </div>
                   );
                 })
@@ -2582,13 +2561,6 @@ export function CreateProject() {
               <Button onClick={() => navigate("/admin/project-list")}>
                 Go to project listing page
               </Button>
-
-
-           
-
-
-
-
             </div>
           </CardContent>
         </Card>
