@@ -39,7 +39,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Zap, MoreHorizontal, Pencil, Trash, Bot, Upload, FileText } from "lucide-react";
+import { Plus, Zap, MoreHorizontal, Pencil, Trash, Bot, Eye, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Service {
@@ -54,7 +54,9 @@ export default function Services() {
   const [activeSection, setActiveSection] = useState("services");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [serviceToPreview, setServiceToPreview] = useState<Service | null>(null);
   const [manualServices, setManualServices] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
@@ -83,6 +85,11 @@ export default function Services() {
   const handleEditService = (serviceId: string) => {
     console.log("Edit service:", serviceId);
     // TODO: Navigate to edit service page
+  };
+
+  const handlePreviewService = (service: Service) => {
+    setServiceToPreview(service);
+    setPreviewDialogOpen(true);
   };
 
   const handleDeleteService = (service: Service) => {
@@ -167,7 +174,6 @@ export default function Services() {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // TODO: Process Excel file
       toast({
         title: "File Selected",
         description: `${file.name} has been selected for upload.`,
@@ -182,9 +188,9 @@ export default function Services() {
         setActiveSection={setActiveSection} 
       />
       <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
           <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-800/20 min-h-[calc(100vh-4rem)]">
-            <div className="p-8">
+            <div className="p-4 md:p-8">
               {/* Header Section */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
                 <div className="space-y-1">
@@ -193,10 +199,10 @@ export default function Services() {
                       <Zap className="h-5 w-5" />
                     </div>
                     <div>
-                      <h1 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                      <h1 className="text-xl md:text-2xl font-bold text-purple-900 dark:text-purple-100">
                         Project Services
                       </h1>
-                      <p className="text-sm text-purple-600 dark:text-purple-300">
+                      <p className="text-xs md:text-sm text-purple-600 dark:text-purple-300">
                         Manage and configure services for your project
                       </p>
                     </div>
@@ -206,14 +212,14 @@ export default function Services() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button 
                     onClick={handleGenerateAIServices}
-                    className="h-10 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                    className="h-10 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm"
                   >
                     <Bot className="h-4 w-4 mr-2" />
                     Generate AI Services
                   </Button>
                   <Button 
                     onClick={handleCreateNewService}
-                    className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white"
+                    className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white text-sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create New Service
@@ -224,7 +230,7 @@ export default function Services() {
               {/* Services Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
                     <Zap className="h-5 w-5 text-purple-600" />
                     Available Services
                   </CardTitle>
@@ -261,58 +267,67 @@ export default function Services() {
                       </div>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Service Name</TableHead>
-                          <TableHead>Icon</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {services.map((service) => (
-                          <TableRow key={service.id}>
-                            <TableCell className="font-medium">
-                              {service.name}
-                            </TableCell>
-                            <TableCell>
-                              <i className={`${service.icon} text-xl text-purple-600`}></i>
-                            </TableCell>
-                            <TableCell className="max-w-md">
-                              <p className="text-sm text-gray-600 truncate">
-                                {service.description}
-                              </p>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40 bg-white shadow-lg border z-50">
-                                  <DropdownMenuItem 
-                                    onClick={() => handleEditService(service.id)}
-                                    className="cursor-pointer"
-                                  >
-                                    <Pencil className="mr-2 h-4 w-4 text-blue-600" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteService(service)}
-                                    className="cursor-pointer text-red-600"
-                                  >
-                                    <Trash className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Service Name</TableHead>
+                            <TableHead>Icon</TableHead>
+                            <TableHead className="hidden md:table-cell">Description</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {services.map((service) => (
+                            <TableRow key={service.id}>
+                              <TableCell className="font-medium">
+                                {service.name}
+                              </TableCell>
+                              <TableCell>
+                                <i className={`${service.icon} text-xl text-purple-600`}></i>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell max-w-md">
+                                <p className="text-sm text-gray-600 truncate">
+                                  {service.description}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40 bg-white shadow-lg border z-50">
+                                    <DropdownMenuItem 
+                                      onClick={() => handlePreviewService(service)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Eye className="mr-2 h-4 w-4 text-green-600" />
+                                      Preview
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleEditService(service.id)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteService(service)}
+                                      className="cursor-pointer text-red-600"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -323,7 +338,7 @@ export default function Services() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white max-w-md mx-4">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -342,9 +357,56 @@ export default function Services() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Service Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="bg-white max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-green-600" />
+              Service Preview
+            </DialogTitle>
+            <DialogDescription>
+              Preview details for the selected service
+            </DialogDescription>
+          </DialogHeader>
+          
+          {serviceToPreview && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 border rounded-lg">
+                <i className={`${serviceToPreview.icon} text-2xl text-purple-600`}></i>
+                <div>
+                  <h3 className="font-semibold text-lg">{serviceToPreview.name}</h3>
+                  <p className="text-sm text-gray-600">{serviceToPreview.description}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Service ID</Label>
+                <Input value={serviceToPreview.id} readOnly className="bg-gray-50" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Icon Class</Label>
+                <Input value={serviceToPreview.icon} readOnly className="bg-gray-50" />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setPreviewDialogOpen(false)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Generate AI Services Dialog */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="bg-white max-w-md">
+        <DialogContent className="bg-white max-w-lg mx-4">
           <DialogHeader>
             <DialogTitle>How do you want to add services?</DialogTitle>
             <DialogDescription>
@@ -360,32 +422,36 @@ export default function Services() {
                 <h3 className="font-medium">📋 Manual Entry</h3>
               </div>
               <p className="text-sm text-gray-600">Enter service names or upload Excel</p>
-              <div className="space-y-2">
-                <Label htmlFor="services">One service name per line</Label>
-                <Textarea
-                  id="services"
-                  placeholder="Enter service names, one per line..."
-                  value={manualServices}
-                  onChange={(e) => setManualServices(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex items-center gap-2">
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="services" className="text-sm">One service name per line</Label>
+                  <Textarea
+                    id="services"
+                    placeholder="Enter service names, one per line..."
+                    value={manualServices}
+                    onChange={(e) => setManualServices(e.target.value)}
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Upload file (Excel/CSV)</Label>
                   <Input
                     type="file"
                     accept=".xlsx,.xls,.csv"
                     onChange={handleFileUpload}
-                    className="text-sm"
+                    className="text-sm cursor-pointer"
                   />
                   {selectedFile && (
-                    <span className="text-xs text-green-600">
-                      {selectedFile.name}
+                    <span className="text-xs text-green-600 block">
+                      Selected: {selectedFile.name}
                     </span>
                   )}
                 </div>
                 <Button 
                   onClick={handleManualEntry}
                   disabled={!manualServices.trim() && !selectedFile}
-                  className="w-full"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
                 >
                   OK
                 </Button>
