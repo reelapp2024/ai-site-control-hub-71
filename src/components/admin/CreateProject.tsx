@@ -19,11 +19,11 @@ export function CreateProject() {
   const [step, setStep] = useState(1);
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
-  const [wantImages, setWantImages] = useState(false);
+  const [wantImages, setWantImages] = useState<number>(0);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [loading, setLoading] = useState(0);
-  const [loadingLocalAreas, setLoadingLocalAreas] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+ const [loading, setLoading] = useState<number>(0);
+  const [loadingLocalAreas, setLoadingLocalAreas] = useState<boolean>(false); // Already boolean, ensure consistency
+  const [submitting, setSubmitting] = useState<boolean>(false); // Already boolean, ensure consistency
 
   const storedLastId = localStorage.getItem("lastCreateProjectId");
   const navProjectId = location.state?.projectId;
@@ -90,7 +90,7 @@ export function CreateProject() {
 
   const [selectedStates, setSelectedStates] = useState<{ [country: string]: string[] }>({});
   const [stateInput, setStateInput] = useState<{ [country: string]: string }>({});
-  const [statesByCountry, setStatesByCountry] = useState({});
+const [statesByCountry, setStatesByCountry] = useState({});
 
   const [loadingStates, setLoadingStates] = useState<boolean>(false); // To show loading state
 
@@ -137,103 +137,100 @@ export function CreateProject() {
     }
   }, []); // Empty dependency array to run only on mount
 
-  const fetchStatesForCountry = async (countryId: string) => {
-    setLoadingStates(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await httpFile.get("/fetch_states", {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { country_ids: countryId },
-      });
+ const fetchStatesForCountry = async (countryId: string) => {
+  setLoading(1); // Changed from true to 1
+  try {
+    const token = localStorage.getItem("token");
+    const res = await httpFile.get("/fetch_states", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { country_ids: countryId },
+    });
 
-      console.log("FetchStates Response:", {
-        countryId,
-        status: res.status,
-        data: res.data,
-      });
+    console.log("FetchStates Response:", {
+      countryId,
+      status: res.status,
+      data: res.data,
+    });
 
-      const states: State[] = res.data.data?.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        country_id: countryId,
-        status: item.status !== undefined ? item.status : 0,
-      })) || [];
-      setStatesByCountry((prev) => ({
+    const states: State[] = res.data.data?.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      country_id: countryId,
+      status: item.status !== undefined ? item.status : 0,
+    })) || [];
+    setStatesByCountry((prev) => ({
+      ...prev,
+      [countryId]: states,
+    }));
+  } catch (err: any) {
+    console.error("FetchStates Error:", err);
+    toast({
+      title: "Error",
+      description: err.response?.data?.message || "Failed to fetch states.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(0); // Changed from false to 0
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+const fetchCitiesForState = async (stateId: string, stateName: string, search: string = "") => {
+  setLoading(1); // Changed from true to 1
+  try {
+    const token = localStorage.getItem("token");
+    const res = await httpFile.get("/fetch_cities", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { state_ids: stateId, search },
+    });
+
+    console.log("FetchCities Response:", {
+      stateId,
+      stateName,
+      status: res.status,
+      data: res.data,
+    });
+
+    const cities: City[] = res.data.data?.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      state_id: stateId,
+      manual: false,
+      status: item.status !== undefined ? item.status : 0,
+    })) || [];
+
+    // Deduplicate cities based on name
+    setCitiesByState((prev) => {
+      const existingCities = prev[stateName] || [];
+      const newCities = cities.filter(
+        (city) => !existingCities.some((c: City) => c.name === city.name)
+      );
+      return {
         ...prev,
-        [countryId]: states,
-      }));
-    } catch (err: any) {
-      console.error("FetchStates Error:", err);
-      toast({
-        title: "Error",
-        description: err.response?.data?.message || "Failed to fetch states.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const fetchCitiesForState = async (stateId: string, stateName: string, search: string = "") => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await httpFile.get("/fetch_cities", {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { state_ids: stateId, search },
-      });
-
-      console.log("FetchCities Response:", {
-        stateId,
-        stateName,
-        status: res.status,
-        data: res.data,
-      });
-
-      const cities: City[] = res.data.data?.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        state_id: stateId,
-        manual: false,
-        status: item.status !== undefined ? item.status : 0,
-      })) || [];
-
-      // Deduplicate cities based on name
-      setCitiesByState((prev) => {
-        const existingCities = prev[stateName] || [];
-        const newCities = cities.filter(
-          (city) => !existingCities.some((c: City) => c.name === city.name)
-        );
-        return {
-          ...prev,
-          [stateName]: [...existingCities, ...newCities],
-        };
-      });
-    } catch (err: any) {
-      console.error("FetchCities Error:", err);
-      toast({
-        title: "Error",
-        description: err.response?.data?.message || "Failed to fetch cities.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+        [stateName]: [...existingCities, ...newCities],
+      };
+    });
+  } catch (err: any) {
+    console.error("FetchCities Error:", err);
+    toast({
+      title: "Error",
+      description: err.response?.data?.message || "Failed to fetch cities.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(0); // Changed from false to 0
+  }
+};
 
 
   const fetchProjectDetails = async () => {
@@ -851,7 +848,7 @@ export function CreateProject() {
       };
 
       console.log("Project payload: ", payload);
-      setLoading(1);
+      setLoading(true);
 
       try {
         const token = localStorage.getItem("token");
@@ -1314,26 +1311,38 @@ export function CreateProject() {
     });
   };
 
-  const selectAllStates = (countryName: string) => {
-    const updatedSelectedStates = { ...selectedStates };
-    updatedSelectedStates[countryName] = [...(states[countryName] || [])];
-    setSelectedStates(updatedSelectedStates);
-  };
+const selectAllStates = (countryName: string) => {
+  const country = selectedCountries.find((c) => c.name === countryName);
+  if (!country || !country.countryId) return; // Safety check
+  const countryId = country.countryId;
+  setSelectedStates((prev) => ({
+    ...prev,
+    [countryName]: (statesByCountry[countryId] || []).map((state: State) => state.name),
+  }));
+};
 
-  const deselectAllStates = (countryName: string) => {
-    const updatedSelectedStates = { ...selectedStates };
-    updatedSelectedStates[countryName] = [];
-    setSelectedStates(updatedSelectedStates);
-  };
+const deselectAllStates = (countryName: string) => {
+  setSelectedStates((prev) => ({
+    ...prev,
+    [countryName]: [],
+  }));
+};
 
-  const removeState = (countryName: string, state: string) => {
-    const updatedStates = { ...states };
-    updatedStates[countryName] = updatedStates[countryName].filter(s => s !== state);
-    setStates(updatedStates);
-    const updatedSelectedStates = { ...selectedStates };
-    updatedSelectedStates[countryName] = updatedSelectedStates[countryName].filter(s => s !== state);
-    setSelectedStates(updatedSelectedStates);
-  };
+const removeState = (countryName: string, stateName: string) => {
+  const country = selectedCountries.find((c) => c.name === countryName);
+  if (!country || !country.countryId) return; // Safety check
+  const countryId = country.countryId;
+  // Optionally remove manual state from statesByCountry
+  setStatesByCountry((prev) => ({
+    ...prev,
+    [countryId]: (prev[countryId] || []).filter((s: State) => s.name !== stateName || !s.manual),
+  }));
+  // Update selectedStates
+  setSelectedStates((prev) => ({
+    ...prev,
+    [countryName]: prev[countryName]?.filter((s) => s !== stateName) || [],
+  }));
+};
 
   const handleCityKeyDown = (stateName: string, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && cityInput[stateName]?.trim() !== "") {
@@ -1565,104 +1574,104 @@ export function CreateProject() {
   };
 
 
- const handleManualServiceEntry = async () => {
-  const manual = await Swal.fire({
-    title: "Enter Service Names or Upload Excel",
-    html: `
+  const handleManualServiceEntry = async () => {
+    const manual = await Swal.fire({
+      title: "Enter Service Names or Upload Excel",
+      html: `
       <textarea id="swal-textarea" class="swal2-textarea"
         placeholder="One service name per line"></textarea>
       <input type="file" id="swal-file" class="swal2-file"
         accept=".xlsx,.xls" />
     `,
-    focusConfirm: false,
-    preConfirm: () => {
-      const text = (document.getElementById("swal-textarea") as HTMLTextAreaElement).value
-        .split("\n")
-        .map(l => l.trim())
-        .filter(Boolean);
+      focusConfirm: false,
+      preConfirm: () => {
+        const text = (document.getElementById("swal-textarea") as HTMLTextAreaElement).value
+          .split("\n")
+          .map(l => l.trim())
+          .filter(Boolean);
 
-      const fileInput = document.getElementById("swal-file") as HTMLInputElement;
-      const file = fileInput.files?.[0];
-      if (!text.length && !file) {
-        Swal.showValidationMessage(
-          "Please enter at least one name or upload an Excel file."
-        );
-      }
-      if (file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = e => {
-            try {
-              const data = new Uint8Array(e.target.result as ArrayBuffer);
-              const wb = XLSX.read(data, { type: "array" });
-              const sheet = wb.Sheets[wb.SheetNames[0]];
-              const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-              const fromFile = rows
-                .map(r => r[0])
-                .filter(v => typeof v === "string" && v.trim());
-              resolve([...text, ...fromFile]);
-            } catch (err) {
-              reject("Failed to parse Excel file.");
-            }
-          };
-          reader.onerror = () => reject("Failed to read file.");
-          reader.readAsArrayBuffer(file);
-        });
-      }
-      return text;
-    },
-  });
-
-  if (manual.isConfirmed) {
-    const servicesArray = manual.value;
-    if (Array.isArray(servicesArray) && servicesArray.length) {
-      setSubmitting(true);
-      try {
-        const token = localStorage.getItem("token");
-        const payload = { projectId, wantAiServices: 0, services: servicesArray };
-        const res = await httpFile.post(
-          "/addServicesToLocation",
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (res.status === 200) {
-          toast({
-            title: "Success",
-            description: "Manual services added successfully!",
-          });
-          setLastSavedServiceOption("manual");
-          setLastSavedServiceNames(servicesArray.join("\n"));
-          setStep(step + 1);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to add manual services",
-            variant: "destructive",
+        const fileInput = document.getElementById("swal-file") as HTMLInputElement;
+        const file = fileInput.files?.[0];
+        if (!text.length && !file) {
+          Swal.showValidationMessage(
+            "Please enter at least one name or upload an Excel file."
+          );
+        }
+        if (file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+              try {
+                const data = new Uint8Array(e.target.result as ArrayBuffer);
+                const wb = XLSX.read(data, { type: "array" });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const fromFile = rows
+                  .map(r => r[0])
+                  .filter(v => typeof v === "string" && v.trim());
+                resolve([...text, ...fromFile]);
+              } catch (err) {
+                reject("Failed to parse Excel file.");
+              }
+            };
+            reader.onerror = () => reject("Failed to read file.");
+            reader.readAsArrayBuffer(file);
           });
         }
-      } catch (error) {
+        return text;
+      },
+    });
+
+    if (manual.isConfirmed) {
+      const servicesArray = manual.value;
+      if (Array.isArray(servicesArray) && servicesArray.length) {
+        setSubmitting(true);
+        try {
+          const token = localStorage.getItem("token");
+          const payload = { projectId, wantAiServices: 0, services: servicesArray };
+          const res = await httpFile.post(
+            "/addServicesToLocation",
+            payload,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          if (res.status === 200) {
+            toast({
+              title: "Success",
+              description: "Manual services added successfully!",
+            });
+            setLastSavedServiceOption("manual");
+            setLastSavedServiceNames(servicesArray.join("\n"));
+            setStep(step + 1);
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to add manual services",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: error.response?.data?.message || "An error occurred while adding manual services!",
+            variant: "destructive",
+          });
+        } finally {
+          setSubmitting(false);
+        }
+      } else {
         toast({
           title: "Error",
-          description: error.response?.data?.message || "An error occurred while adding manual services!",
+          description: "No services to submit.",
           variant: "destructive",
         });
-      } finally {
-        setSubmitting(false);
       }
-    } else {
-      toast({
-        title: "Error",
-        description: "No services to submit.",
-        variant: "destructive",
-      });
     }
-  }
-};
+  };
 
 
 
@@ -1692,8 +1701,8 @@ export function CreateProject() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="wantImages"
-                checked={wantImages}
-                onCheckedChange={(checked) => setWantImages(checked === true)}
+                checked={wantImages === 1}
+                onCheckedChange={(checked) => setWantImages(checked ? 1 : 0)}
               />
               <label
                 htmlFor="wantImages"
@@ -2584,7 +2593,7 @@ export function CreateProject() {
               </Button>
 
 
-           
+
 
 
 
