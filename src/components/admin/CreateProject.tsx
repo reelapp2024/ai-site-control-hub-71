@@ -1699,11 +1699,11 @@ const removeState = (countryName: string, stateName: string) => {
               />
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="wantImages"
-                checked={wantImages === 1}
-                onCheckedChange={(checked) => setWantImages(checked ? 1 : 0)}
-              />
+           <Checkbox
+  id="wantImages"
+  checked={wantImages === 1}
+  onCheckedChange={(checked) => setWantImages(checked ? 1 : 0)}
+/>
               <label
                 htmlFor="wantImages"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
