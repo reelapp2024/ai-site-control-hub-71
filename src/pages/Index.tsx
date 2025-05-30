@@ -21,6 +21,7 @@ import { PostSubcategoriesManagement } from "@/components/admin/PostSubcategorie
 import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
 import { PostEditor } from "@/components/admin/PostEditor";
 import { CreditManagement } from "@/components/admin/CreditManagement";
+import { HostingDashboard } from "@/components/admin/HostingDashboard";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 const Index = () => {
@@ -79,6 +80,8 @@ const Index = () => {
         return <ProjectList />;
       case "websites":
         return <WebsiteManagement />;
+      case "hosting":
+        return <HostingDashboard />;
       case "domain-management":
         return <DomainManagement />;
       case "users":

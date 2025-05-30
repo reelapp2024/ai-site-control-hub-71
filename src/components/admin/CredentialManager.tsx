@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,9 +60,10 @@ const defaultPorts: Record<ConnectionProtocol, number> = {
 interface CredentialManagerProps {
   onCredentialSelected?: (credential: HostingCredential) => void;
   selectedDomain?: string;
+  onFileManagerOpen?: (credential: HostingCredential) => void;
 }
 
-export function CredentialManager({ onCredentialSelected, selectedDomain }: CredentialManagerProps) {
+export function CredentialManager({ onCredentialSelected, selectedDomain, onFileManagerOpen }: CredentialManagerProps) {
   const [credentials, setCredentials] = useState<HostingCredential[]>([]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingCredential, setEditingCredential] = useState<HostingCredential | null>(null);
@@ -117,6 +117,11 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
       form.setValue("protocol", defaultProtocol);
       // Set default port for protocol
       form.setValue("port", defaultPorts[defaultProtocol]);
+      
+      // Pre-fill server field with guidance for cPanel
+      if (providerId === "cpanel") {
+        form.setValue("server", "your-domain.com");
+      }
     }
   };
 
@@ -301,7 +306,10 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Select how you want to connect to your hosting
+                          {form.watch("providerId") === "cpanel" && form.watch("protocol") === "cpanel" 
+                            ? "cPanel API connection (recommended for full control)"
+                            : "Select how you want to connect to your hosting"
+                          }
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -319,8 +327,20 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
                         <FormItem>
                           <FormLabel>Server</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g. ftp.example.com" {...field} />
+                            <Input 
+                              placeholder={
+                                form.watch("providerId") === "cpanel" 
+                                  ? "rs3-va.serverhostgroup.com" 
+                                  : "e.g. ftp.example.com"
+                              } 
+                              {...field} 
+                            />
                           </FormControl>
+                          {form.watch("providerId") === "cpanel" && (
+                            <FormDescription>
+                              Enter your domain or cPanel server URL (without /cpanel)
+                            </FormDescription>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
@@ -339,6 +359,11 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
                             onChange={e => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
+                        {form.watch("protocol") === "cpanel" && (
+                          <FormDescription>
+                            2083 (secure) or 2082 (non-secure)
+                          </FormDescription>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -486,9 +511,18 @@ export function CredentialManager({ onCredentialSelected, selectedDomain }: Cred
                             Testing
                           </>
                         ) : (
-                          "Test Connection"
+                          "Test"
                         )}
                       </Button>
+                      {credential.isValid && onFileManagerOpen && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onFileManagerOpen(credential)}
+                        >
+                          Browse Files
+                        </Button>
+                      )}
                       {onCredentialSelected && selectedDomain && (
                         <Button
                           size="sm"
