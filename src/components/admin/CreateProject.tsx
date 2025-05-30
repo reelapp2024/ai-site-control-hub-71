@@ -543,7 +543,7 @@ export const CreateProject = () => {
                       <CardTitle className="text-sm flex items-center gap-2">
                         <Checkbox
                           checked={selectedFeatures.includes(feature.id)}
-                          readOnly
+                          disabled
                         />
                         {feature.name}
                       </CardTitle>
