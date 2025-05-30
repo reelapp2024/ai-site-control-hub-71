@@ -18,7 +18,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Zap, MoreHorizontal, Pencil, Trash, Bot } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Zap, MoreHorizontal, Pencil, Trash, Bot, Upload, FileText } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Service {
   id: string;
@@ -30,9 +52,14 @@ interface Service {
 export default function Services() {
   const { projectId } = useParams<{ projectId: string }>();
   const [activeSection, setActiveSection] = useState("services");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [manualServices, setManualServices] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   // Mock data for services - replace with actual API call
-  const [services] = useState<Service[]>([
+  const [services, setServices] = useState<Service[]>([
     {
       id: "1",
       name: "User Authentication",
@@ -58,19 +85,94 @@ export default function Services() {
     // TODO: Navigate to edit service page
   };
 
-  const handleDeleteService = (serviceId: string) => {
-    console.log("Delete service:", serviceId);
-    // TODO: Implement delete functionality
+  const handleDeleteService = (service: Service) => {
+    setServiceToDelete(service);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (serviceToDelete) {
+      setServices(services.filter(s => s.id !== serviceToDelete.id));
+      toast({
+        title: "Service Deleted",
+        description: `${serviceToDelete.name} has been deleted successfully.`,
+      });
+      setServiceToDelete(null);
+    }
+    setDeleteDialogOpen(false);
   };
 
   const handleGenerateAIServices = () => {
-    console.log("Generate AI services for project:", projectId);
-    // TODO: Implement AI service generation
+    setGenerateDialogOpen(true);
   };
 
   const handleCreateNewService = () => {
     console.log("Create new service for project:", projectId);
     // TODO: Navigate to create service page
+  };
+
+  const handleManualEntry = () => {
+    if (manualServices.trim()) {
+      const serviceNames = manualServices.split('\n').filter(name => name.trim());
+      const newServices = serviceNames.map((name, index) => ({
+        id: `new-${Date.now()}-${index}`,
+        name: name.trim(),
+        icon: "fas fa-cog",
+        description: "Service description to be added"
+      }));
+      
+      setServices([...services, ...newServices]);
+      toast({
+        title: "Services Added",
+        description: `${newServices.length} services have been added manually.`,
+      });
+      setManualServices("");
+      setGenerateDialogOpen(false);
+    }
+  };
+
+  const handleAIGeneration = () => {
+    toast({
+      title: "AI Services Generation Started",
+      description: "New services will be added in background; description generation will follow.",
+    });
+    setGenerateDialogOpen(false);
+    
+    // Simulate AI generation
+    setTimeout(() => {
+      const aiServices = [
+        {
+          id: `ai-${Date.now()}-1`,
+          name: "AI Content Generator",
+          icon: "fas fa-robot",
+          description: "AI-powered content generation service"
+        },
+        {
+          id: `ai-${Date.now()}-2`,
+          name: "Data Analytics",
+          icon: "fas fa-chart-bar",
+          description: "Advanced data analytics and reporting service"
+        }
+      ];
+      
+      setServices(prev => [...prev, ...aiServices]);
+      toast({
+        title: "AI Services Generated",
+        description: `${aiServices.length} AI services have been generated successfully.`,
+      });
+    }, 2000);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // TODO: Process Excel file
+      toast({
+        title: "File Selected",
+        description: `${file.name} has been selected for upload.`,
+      });
+    }
   };
 
   return (
@@ -189,7 +291,7 @@ export default function Services() {
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40 bg-white shadow-lg border">
+                                <DropdownMenuContent align="end" className="w-40 bg-white shadow-lg border z-50">
                                   <DropdownMenuItem 
                                     onClick={() => handleEditService(service.id)}
                                     className="cursor-pointer"
@@ -198,7 +300,7 @@ export default function Services() {
                                     Edit
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
-                                    onClick={() => handleDeleteService(service.id)}
+                                    onClick={() => handleDeleteService(service)}
                                     className="cursor-pointer text-red-600"
                                   >
                                     <Trash className="mr-2 h-4 w-4" />
@@ -218,6 +320,107 @@ export default function Services() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the service "{serviceToDelete?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Generate AI Services Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="bg-white max-w-md">
+          <DialogHeader>
+            <DialogTitle>How do you want to add services?</DialogTitle>
+            <DialogDescription>
+              Choose your preferred method to add new services to your project.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Manual Entry Option */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <h3 className="font-medium">📋 Manual Entry</h3>
+              </div>
+              <p className="text-sm text-gray-600">Enter service names or upload Excel</p>
+              <div className="space-y-2">
+                <Label htmlFor="services">One service name per line</Label>
+                <Textarea
+                  id="services"
+                  placeholder="Enter service names, one per line..."
+                  value={manualServices}
+                  onChange={(e) => setManualServices(e.target.value)}
+                  rows={3}
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleFileUpload}
+                    className="text-sm"
+                  />
+                  {selectedFile && (
+                    <span className="text-xs text-green-600">
+                      {selectedFile.name}
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  onClick={handleManualEntry}
+                  disabled={!manualServices.trim() && !selectedFile}
+                  className="w-full"
+                >
+                  OK
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Services Option */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-purple-600" />
+                <h3 className="font-medium">🤖 AI Services</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                New services will be added in background; description generation will follow.
+              </p>
+              <Button 
+                onClick={handleAIGeneration}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+              >
+                Generate AI Services
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setGenerateDialogOpen(false)}
+              className="w-full"
+            >
+              ❌ Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
