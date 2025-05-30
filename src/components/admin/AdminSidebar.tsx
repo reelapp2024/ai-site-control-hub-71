@@ -1,10 +1,7 @@
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
-  Globe, 
   Users, 
-  Bot, 
-  BarChart3, 
   Settings,
   Zap,
   Menu,
@@ -42,7 +39,6 @@ const getBaseSidebarItems = () => [
       { id: "project-list", label: "Project List", icon: ListTodo },
     ]
   },
-  { id: "websites", label: "Websites", icon: Globe },
   { id: "hosting", label: "Hosting", icon: Server },
   { 
     id: "domains", 
@@ -64,8 +60,6 @@ const getBaseSidebarItems = () => [
   { id: "themes", label: "Themes", icon: Palette },
   { id: "plugins", label: "Plugins", icon: Plug },
   { id: "credits", label: "Credits", icon: Coins },
-  { id: "ai-models", label: "AI Models", icon: Bot },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

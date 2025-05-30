@@ -121,6 +121,8 @@ export function ProjectList() {
   };
 
   const handleVisitServices = (id) => {
+    // Store the project ID in localStorage so the services page knows which project
+    localStorage.setItem("currentProjectId", id);
     navigate(`/services/${id}`);
   };
 

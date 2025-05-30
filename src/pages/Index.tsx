@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
-import { WebsiteManagement } from "@/components/admin/WebsiteManagement";
 import { UserManagement } from "@/components/admin/UserManagement";
-import { AIModelConfig } from "@/components/admin/AIModelConfig";
-import { Analytics } from "@/components/admin/Analytics";
 import { Settings } from "@/components/admin/Settings";
 import { CreateProject } from "@/components/admin/CreateProject";
 import { ProjectList } from "@/components/admin/ProjectList";
@@ -21,6 +18,7 @@ import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
 import { PostEditor } from "@/components/admin/PostEditor";
 import { CreditManagement } from "@/components/admin/CreditManagement";
 import { HostingDashboard } from "@/components/admin/HostingDashboard";
+import { ServicesManagement } from "@/components/admin/ServicesManagement";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 interface IndexProps {
@@ -55,6 +53,9 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
     } else if (location.pathname === "/admin/project-list") {
       setActiveSection("project-list");
       setIsEditingPost(false);
+    } else if (location.pathname.includes("/services/")) {
+      setActiveSection("services");
+      setIsEditingPost(false);
     }
   }, [location.pathname]);
 
@@ -88,8 +89,8 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
         return <CreateProject />;
       case "project-list":
         return <ProjectList />;
-      case "websites":
-        return <WebsiteManagement />;
+      case "services":
+        return <ServicesManagement />;
       case "hosting":
         return <HostingDashboard />;
       case "domain-management":
@@ -116,10 +117,6 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
         return <PostTagsManagement />;
       case "credits":
         return <CreditManagement />;
-      case "ai-models":
-        return <AIModelConfig />;
-      case "analytics":
-        return <Analytics />;
       case "settings":
         return <Settings />;
       default:
