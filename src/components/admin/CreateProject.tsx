@@ -2548,7 +2548,7 @@ const removeState = (countryName: string, stateName: string) => {
                 <Button
                   type="button"
                   onClick={handleNextStep}
-                  disabled={loading === 1 || submitting}
+                  disabled={loading || submitting}
                 >
                   {step < 8 ? (
                     <>
