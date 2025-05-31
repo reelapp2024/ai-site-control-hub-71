@@ -40,7 +40,7 @@ export function CreateProject() {
 
   const [lastSavedProjectName, setLastSavedProjectName] = useState("");
   const [lastSavedServiceType, setLastSavedServiceType] = useState("");
-  const [lastSavedWantImages, setLastSavedWantImages] = useState(false);
+  const [lastSavedWantImages, setLastSavedWantImages] = useState<number>(0);
   const [lastSavedCountries, setLastSavedCountries] = useState<Country[]>([]);
   const [lastSavedStates, setLastSavedStates] = useState<{ [country: string]: string[] }>({});
   const [lastSavedCities, setLastSavedCities] = useState<{ [state: string]: string[] }>({});
@@ -1558,7 +1558,7 @@ const removeState = (countryName: string, stateName: string) => {
     setLastSavedLocalAreas({});
     setLastSavedProjectName("");
     setLastSavedServiceType("");
-    setLastSavedWantImages(false);
+    setLastSavedWantImages(0);
     setLastSavedServiceOption("");
     setLastSavedServiceNames("");
     setLastSavedAboutUsEmail("");
@@ -2570,3 +2570,5 @@ const removeState = (countryName: string, stateName: string) => {
     </div>
   );
 }
+
+export default CreateProject;
