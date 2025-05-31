@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { FaGlobe, FaShoppingCart, FaBuilding, FaPalette, FaCheckCircle, FaCode, FaCamera, FaSearch, FaMobileAlt, FaPencilAlt, FaChartBar, FaUsers, FaEnvelope, FaLock } from 'react-icons/fa';
+import { Globe, ShoppingCart, Building, Palette, CheckCircle, Code, Camera, Search, Smartphone, PenTool, BarChart, Users, Mail, Lock } from 'lucide-react';
 
 interface ProjectType {
   id: number;
@@ -36,29 +36,27 @@ const CreateProject = () => {
   const [loading, setLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const router = useRouter();
-
   const projectTypes: ProjectType[] = [
-    { id: 1, name: 'Informational Website', description: 'Perfect for showcasing your business or personal brand.', icon: <FaGlobe /> },
-    { id: 2, name: 'E-commerce Store', description: 'Start selling products online with a fully functional online store.', icon: <FaShoppingCart /> },
-    { id: 3, name: 'Business Website', description: 'Establish a professional online presence for your company.', icon: <FaBuilding /> },
-    { id: 4, name: 'Portfolio Website', description: 'Showcase your work and skills with a stunning portfolio.', icon: <FaPalette /> },
+    { id: 1, name: 'Informational Website', description: 'Perfect for showcasing your business or personal brand.', icon: <Globe /> },
+    { id: 2, name: 'E-commerce Store', description: 'Start selling products online with a fully functional online store.', icon: <ShoppingCart /> },
+    { id: 3, name: 'Business Website', description: 'Establish a professional online presence for your company.', icon: <Building /> },
+    { id: 4, name: 'Portfolio Website', description: 'Showcase your work and skills with a stunning portfolio.', icon: <Palette /> },
   ];
 
   const industries: Industry[] = [
-    { id: 1, name: 'Technology', description: 'For tech startups and software companies.', icon: <FaCode /> },
-    { id: 2, name: 'Photography', description: 'Showcase your visual artistry.', icon: <FaCamera /> },
-    { id: 3, name: 'Marketing', description: 'Attract clients with a professional marketing site.', icon: <FaChartBar /> },
-    { id: 4, name: 'Retail', description: 'Sell your products to a broad audience.', icon: <FaShoppingCart /> },
+    { id: 1, name: 'Technology', description: 'For tech startups and software companies.', icon: <Code /> },
+    { id: 2, name: 'Photography', description: 'Showcase your visual artistry.', icon: <Camera /> },
+    { id: 3, name: 'Marketing', description: 'Attract clients with a professional marketing site.', icon: <BarChart /> },
+    { id: 4, name: 'Retail', description: 'Sell your products to a broad audience.', icon: <ShoppingCart /> },
   ];
 
   const features: Feature[] = [
-    { id: 1, name: 'SEO Optimization', description: 'Improve your website\'s visibility on search engines.', icon: <FaSearch /> },
-    { id: 2, name: 'Mobile Responsive', description: 'Ensure your website looks great on all devices.', icon: <FaMobileAlt /> },
-    { id: 3, name: 'Blog Integration', description: 'Share your thoughts and ideas with a built-in blog.', icon: <FaPencilAlt /> },
-    { id: 4, name: 'Customer Support Chat', description: 'Provide real-time support to your website visitors.', icon: <FaUsers /> },
-    { id: 5, name: 'Contact Form', description: 'Allow visitors to easily get in touch with you.', icon: <FaEnvelope /> },
-    { id: 6, name: 'Security Features', description: 'Protect your website and user data with advanced security measures.', icon: <FaLock /> },
+    { id: 1, name: 'SEO Optimization', description: 'Improve your website\'s visibility on search engines.', icon: <Search /> },
+    { id: 2, name: 'Mobile Responsive', description: 'Ensure your website looks great on all devices.', icon: <Smartphone /> },
+    { id: 3, name: 'Blog Integration', description: 'Share your thoughts and ideas with a built-in blog.', icon: <PenTool /> },
+    { id: 4, name: 'Customer Support Chat', description: 'Provide real-time support to your website visitors.', icon: <Users /> },
+    { id: 5, name: 'Contact Form', description: 'Allow visitors to easily get in touch with you.', icon: <Mail /> },
+    { id: 6, name: 'Security Features', description: 'Protect your website and user data with advanced security measures.', icon: <Lock /> },
   ];
 
   const handleNext = () => {
@@ -113,7 +111,8 @@ const CreateProject = () => {
 
     setLoading(false);
     alert('Project created successfully!');
-    router.push('/admin/projects');
+    // Navigate to project list - you can replace this with proper navigation
+    window.location.href = '/admin/project-list';
   };
 
   const renderStepContent = () => {
@@ -146,7 +145,7 @@ const CreateProject = () => {
                   }`}
                 >
                   <div className="text-center">
-                    <div className="text-4xl mb-4">{type.icon}</div>
+                    <div className="text-4xl mb-4 text-blue-600">{type.icon}</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">{type.name}</h3>
                     <p className="text-gray-600 text-sm">{type.description}</p>
                   </div>
@@ -175,7 +174,7 @@ const CreateProject = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{industry.icon}</div>
+                    <div className="text-2xl text-blue-600">{industry.icon}</div>
                     <div>
                       <h3 className="font-semibold text-gray-900">{industry.name}</h3>
                       <p className="text-gray-600 text-sm">{industry.description}</p>
@@ -266,10 +265,12 @@ const CreateProject = () => {
                         onChange={() => handleFeatureToggle(feature.id)}
                         className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       />
-                      <div>
-                        <span className="text-2xl mr-2">{feature.icon}</span>
-                        <span className="font-medium text-gray-900">{feature.name}</span>
-                        <p className="text-sm text-gray-600">{feature.description}</p>
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3 text-blue-600">{feature.icon}</span>
+                        <div>
+                          <span className="font-medium text-gray-900 block">{feature.name}</span>
+                          <p className="text-sm text-gray-600">{feature.description}</p>
+                        </div>
                       </div>
                     </label>
                   ))}
