@@ -19,9 +19,9 @@ export function CreateProject() {
   const [step, setStep] = useState(1);
   const [projectName, setProjectName] = useState("");
   const [serviceType, setServiceType] = useState("");
-  const [wantImages, setWantImages] = useState<number>(0);
+  const [wantImages, setWantImages] = useState<boolean>(false);
   const [showSuccess, setShowSuccess] = useState(false);
- const [loading, setLoading] = useState<number>(0);
+ const [loading, setLoading] = useState<boolean>(false);
   const [loadingLocalAreas, setLoadingLocalAreas] = useState<boolean>(false); // Already boolean, ensure consistency
   const [submitting, setSubmitting] = useState<boolean>(false); // Already boolean, ensure consistency
 
@@ -1701,8 +1701,8 @@ const removeState = (countryName: string, stateName: string) => {
             <div className="flex items-center space-x-2">
            <Checkbox
   id="wantImages"
-  checked={wantImages === 1}
-  onCheckedChange={(checked) => setWantImages(checked ? 1 : 0)}
+  checked={wantImages}
+  onCheckedChange={(checked) => setWantImages(!!checked)}
 />
               <label
                 htmlFor="wantImages"
