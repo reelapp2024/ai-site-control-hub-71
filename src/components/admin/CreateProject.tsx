@@ -40,7 +40,7 @@ export function CreateProject() {
 
   const [lastSavedProjectName, setLastSavedProjectName] = useState("");
   const [lastSavedServiceType, setLastSavedServiceType] = useState("");
-  const [lastSavedWantImages, setLastSavedWantImages] = useState<number>(0);
+  const [lastSavedWantImages, setLastSavedWantImages] = useState(false);
   const [lastSavedCountries, setLastSavedCountries] = useState<Country[]>([]);
   const [lastSavedStates, setLastSavedStates] = useState<{ [country: string]: string[] }>({});
   const [lastSavedCities, setLastSavedCities] = useState<{ [state: string]: string[] }>({});
@@ -50,6 +50,7 @@ export function CreateProject() {
   const [lastSavedAboutUsEmail, setLastSavedAboutUsEmail] = useState("");
   const [lastSavedAboutUsPhone, setLastSavedAboutUsPhone] = useState("");
   const [lastSavedAboutUsLocation, setLastSavedAboutUsLocation] = useState("");
+
 
   const [fetchedCountries, setFetchedCountries] = useState(false);
   const [fetchedStates, setFetchedStates] = useState(false);
@@ -118,6 +119,9 @@ const [statesByCountry, setStatesByCountry] = useState({});
   const [redirectCounter, setRedirectCounter] = useState(7);
 
   // Page creation option - removed from here, now managed per country
+
+
+
 
   useEffect(() => {
     // If there's no projectId (new project), reset all location-related states
@@ -630,6 +634,9 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
     }
   }, [step, projectId]);
   // Step 3: Reload States
+
+
+
 
   useEffect(() => {
     if (step === 3 && projectId && !fetchedStates) {
@@ -1558,7 +1565,7 @@ const removeState = (countryName: string, stateName: string) => {
     setLastSavedLocalAreas({});
     setLastSavedProjectName("");
     setLastSavedServiceType("");
-    setLastSavedWantImages(0);
+    setLastSavedWantImages(false);
     setLastSavedServiceOption("");
     setLastSavedServiceNames("");
     setLastSavedAboutUsEmail("");
@@ -1991,6 +1998,10 @@ const removeState = (countryName: string, stateName: string) => {
                         <Label>Search or Add City</Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+
+
+
                           <Input
                             placeholder={`Search or add city for ${state}`}
                             value={cityInput[state] || ""}
@@ -2008,6 +2019,12 @@ const removeState = (countryName: string, stateName: string) => {
                             }}
                             className="pl-10"
                           />
+
+
+
+
+
+
                         </div>
                         <p className="text-xs text-gray-500">
                           Type to search existing cities or enter a new city name and press Enter to add it
@@ -2015,6 +2032,10 @@ const removeState = (countryName: string, stateName: string) => {
                       </div>
 
                       {loading && <div className="text-sm text-gray-500">Loading cities...</div>}
+
+
+
+
 
                       {filteredCities.length > 0 ? (
                         <div className="border rounded-lg p-4 max-h-96 overflow-y-auto mt-4">
@@ -2101,6 +2122,16 @@ const removeState = (countryName: string, stateName: string) => {
                           )}
                         </div>
                       </div>
+
+
+
+
+
+
+
+
+
+
                     </div>
                   );
                 })
@@ -2204,9 +2235,7 @@ const removeState = (countryName: string, stateName: string) => {
                     >
                       <span className="font-medium">{country.name}</span>
                       <span
-                        className={`text-xs px-2 py-1 rounded ${country.status === 1
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"}`}
+                        className={`text-xs px-2 py-1 rounded ${country.status === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {country.status === 1 ? "Page will be created" : "No page"}
                       </span>
@@ -2563,6 +2592,12 @@ const removeState = (countryName: string, stateName: string) => {
                 Go to project listing page
               </Button>
 
+
+
+
+
+
+
             </div>
           </CardContent>
         </Card>
@@ -2570,5 +2605,3 @@ const removeState = (countryName: string, stateName: string) => {
     </div>
   );
 }
-
-export default CreateProject;
