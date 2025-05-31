@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { Settings } from "@/components/admin/Settings";
-import CreateProject from "@/components/admin/CreateProject";
+import { CreateProject } from "@/components/admin/CreateProject";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { SubAdminManagement } from "@/components/admin/SubAdminManagement";
 import { ThemesManagement } from "@/components/admin/ThemesManagement";
