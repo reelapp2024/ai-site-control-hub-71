@@ -138,7 +138,7 @@ const [statesByCountry, setStatesByCountry] = useState({});
   }, []); // Empty dependency array to run only on mount
 
  const fetchStatesForCountry = async (countryId: string) => {
-  setLoading(1); // Changed from true to 1
+  setLoading(true); // Changed from true to 1
   try {
     const token = localStorage.getItem("token");
     const res = await httpFile.get("/fetch_states", {
@@ -170,7 +170,7 @@ const [statesByCountry, setStatesByCountry] = useState({});
       variant: "destructive",
     });
   } finally {
-    setLoading(0); // Changed from false to 0
+    setLoading(false); // Changed from false to 0
   }
 };
 
@@ -186,7 +186,7 @@ const [statesByCountry, setStatesByCountry] = useState({});
 
 
 const fetchCitiesForState = async (stateId: string, stateName: string, search: string = "") => {
-  setLoading(1); // Changed from true to 1
+  setLoading(true); // Changed from true to 1
   try {
     const token = localStorage.getItem("token");
     const res = await httpFile.get("/fetch_cities", {
@@ -228,7 +228,7 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
       variant: "destructive",
     });
   } finally {
-    setLoading(0); // Changed from false to 0
+    setLoading(false); // Changed from false to 0
   }
 };
 
@@ -565,10 +565,10 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
             const projectData = res.data.projectInfo || {};
             setProjectName(projectData.projectName || "");
             setServiceType(projectData.serviceType || "");
-            setWantImages(projectData.wantImages === 1);
+            setWantImages(projectData.wantImages);
             setLastSavedProjectName(projectData.projectName || "");
             setLastSavedServiceType(projectData.serviceType || "");
-            setLastSavedWantImages(projectData.wantImages === 1);
+            setLastSavedWantImages(projectData.wantImages);
           }
         } catch (error) {
           console.error("FetchProjectDetailsForStep1 Error:", error);
@@ -891,7 +891,7 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
           setLastSavedServiceType(serviceType);
           setLastSavedWantImages(wantImages);
 
-          setLoading(0);
+          setLoading(false);
           setStep(step + 1);
         }
       } catch (err: any) {
@@ -901,7 +901,7 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
           variant: "destructive",
         });
       } finally {
-        setLoading(0);
+        setLoading(false);
       }
     } else if (step === 2) {
       const hasCountriesChanged = JSON.stringify(selectedCountries) !== JSON.stringify(lastSavedCountries);
