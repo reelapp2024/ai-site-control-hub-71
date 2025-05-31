@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { FaGlobe, FaShoppingCart, FaBuilding, FaPalette, FaCheckCircle, FaCode, FaCamera, FaSearch, FaMobileAlt, FaPencilAlt, FaChartBar, FaUsers, FaEnvelope, FaLock } from 'react-icons/fa';
 
 interface ProjectType {
