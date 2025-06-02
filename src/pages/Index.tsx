@@ -19,6 +19,7 @@ import { PostEditor } from "@/components/admin/PostEditor";
 import { CreditManagement } from "@/components/admin/CreditManagement";
 import { HostingDashboard } from "@/components/admin/HostingDashboard";
 import ServicesManagement from "@/components/admin/ServicesManagement";
+import { UpdateProject } from "@/components/admin/UpdateProject";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 interface IndexProps {
@@ -53,15 +54,13 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
     } else if (location.pathname === "/admin/project-list") {
       setActiveSection("project-list");
       setIsEditingPost(false);
-    }
-
-    else if (location.pathname === "/admin/create-project") {
+    } else if (location.pathname === "/admin/create-project") {
       setActiveSection("create-project");
       setIsEditingPost(false);
-    }
-
-
-    else if (location.pathname.includes("/services/")) {
+    } else if (location.pathname.includes("/admin/project/") && location.pathname.includes("/details")) {
+      setActiveSection("update-project");
+      setIsEditingPost(false);
+    } else if (location.pathname.includes("/services/")) {
       setActiveSection("services");
       setIsEditingPost(false);
     }
@@ -97,6 +96,8 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
         return <CreateProject />;
       case "project-list":
         return <ProjectList />;
+      case "update-project":
+        return <UpdateProject />;
       case "services":
         return <ServicesManagement />;
       case "hosting":
