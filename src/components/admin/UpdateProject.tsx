@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Edit3, Save, Eye, CheckCircle } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function UpdateProject() {
   const { projectId } = useParams();
@@ -16,13 +18,15 @@ export function UpdateProject() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - replace with actual API call
+  // Mock data - replace with actual API call based on projectId
   const [projectData, setProjectData] = useState({
     projectName: "House Cleaning Service",
     welcomeLine: "Welcome to our professional house cleaning service",
     callToAction: "Book your cleaning today!",
     serviceType: "House",
-    defaultFasFaIcon: "home",
+    primaryColor: "#7c3aed",
+    secondaryColor: "#a855f7",
+    description: "Professional house cleaning services for your home",
     selectedCountries: [{ name: "United States", id: "US" }],
     selectedStates: [{ name: "California", id: "CA" }],
     selectedCities: [{ name: "Los Angeles", id: "LA" }],
@@ -34,23 +38,12 @@ export function UpdateProject() {
   });
 
   const steps = [
-    { title: "Project Information", icon: "fas fa-info-circle" },
-    { title: "Country Selection", icon: "fas fa-globe" },
-    { title: "State Selection", icon: "fas fa-map" },
-    { title: "City Selection", icon: "fas fa-city" },
-    { title: "Local Area Selection", icon: "fas fa-map-marker" },
-    { title: "Preview", icon: "fas fa-eye" }
-  ];
-
-  const serviceIcons = [
-    { icon: "home", label: "Home" },
-    { icon: "building", label: "Building" },
-    { icon: "car", label: "Car" },
-    { icon: "medkit", label: "Medical" },
-    { icon: "graduation-cap", label: "Education" },
-    { icon: "utensils", label: "Food" },
-    { icon: "camera", label: "Photography" },
-    { icon: "tools", label: "Tools" }
+    { title: "Project Information", icon: "info" },
+    { title: "Country Selection", icon: "globe" },
+    { title: "State Selection", icon: "map" },
+    { title: "City Selection", icon: "building" },
+    { title: "Local Area Selection", icon: "map-pin" },
+    { title: "Preview", icon: "eye" }
   ];
 
   const handleInputChange = (field: string, value: any) => {
@@ -76,63 +69,98 @@ export function UpdateProject() {
         return (
           <div className="space-y-6">
             <div>
-              <Label htmlFor="projectName">Project Name</Label>
+              <Label htmlFor="projectName">Project Name *</Label>
               <Input
                 id="projectName"
                 value={projectData.projectName}
                 onChange={(e) => handleInputChange("projectName", e.target.value)}
                 placeholder="Enter project name"
+                className="mt-1"
               />
             </div>
             
             <div>
-              <Label htmlFor="welcomeLine">Welcome Line</Label>
+              <Label htmlFor="welcomeLine">Welcome Line *</Label>
               <Input
                 id="welcomeLine"
                 value={projectData.welcomeLine}
                 onChange={(e) => handleInputChange("welcomeLine", e.target.value)}
                 placeholder="Enter welcome message"
+                className="mt-1"
               />
             </div>
             
             <div>
-              <Label htmlFor="callToAction">Call to Action</Label>
+              <Label htmlFor="callToAction">Call to Action *</Label>
               <Input
                 id="callToAction"
                 value={projectData.callToAction}
                 onChange={(e) => handleInputChange("callToAction", e.target.value)}
                 placeholder="Enter call to action"
+                className="mt-1"
               />
             </div>
             
             <div>
-              <Label htmlFor="serviceType">Service Type</Label>
+              <Label htmlFor="serviceType">Service Type *</Label>
               <Input
                 id="serviceType"
                 value={projectData.serviceType}
                 onChange={(e) => handleInputChange("serviceType", e.target.value)}
                 placeholder="Enter service type"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={projectData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="Enter project description"
+                className="mt-1"
+                rows={3}
               />
             </div>
             
-            <div>
-              <Label>Service Icon</Label>
-              <div className="grid grid-cols-4 gap-3 mt-2">
-                {serviceIcons.map((item) => (
-                  <button
-                    key={item.icon}
-                    type="button"
-                    onClick={() => handleInputChange("defaultFasFaIcon", item.icon)}
-                    className={`p-3 rounded-lg border text-center transition-colors ${
-                      projectData.defaultFasFaIcon === item.icon
-                        ? "border-purple-500 bg-purple-50 text-purple-700"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <i className={`fas fa-${item.icon} text-xl mb-1`} />
-                    <div className="text-xs">{item.label}</div>
-                  </button>
-                ))}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="primaryColor">Primary Color</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    id="primaryColor"
+                    type="color"
+                    value={projectData.primaryColor}
+                    onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                    className="w-12 h-10 p-1 border rounded"
+                  />
+                  <Input
+                    value={projectData.primaryColor}
+                    onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                    placeholder="#7c3aed"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="secondaryColor">Secondary Color</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    id="secondaryColor"
+                    type="color"
+                    value={projectData.secondaryColor}
+                    onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                    className="w-12 h-10 p-1 border rounded"
+                  />
+                  <Input
+                    value={projectData.secondaryColor}
+                    onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                    placeholder="#a855f7"
+                    className="flex-1"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -142,12 +170,10 @@ export function UpdateProject() {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="isCountry"
                 checked={projectData.isCountry}
-                onChange={(e) => handleInputChange("isCountry", e.target.checked)}
-                className="rounded"
+                onCheckedChange={(checked) => handleInputChange("isCountry", checked)}
               />
               <Label htmlFor="isCountry">Enable Country Level Service</Label>
             </div>
@@ -192,12 +218,10 @@ export function UpdateProject() {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="isState"
                 checked={projectData.isState}
-                onChange={(e) => handleInputChange("isState", e.target.checked)}
-                className="rounded"
+                onCheckedChange={(checked) => handleInputChange("isState", checked)}
               />
               <Label htmlFor="isState">Enable State Level Service</Label>
             </div>
@@ -241,12 +265,10 @@ export function UpdateProject() {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="isCity"
                 checked={projectData.isCity}
-                onChange={(e) => handleInputChange("isCity", e.target.checked)}
-                className="rounded"
+                onCheckedChange={(checked) => handleInputChange("isCity", checked)}
               />
               <Label htmlFor="isCity">Enable City Level Service</Label>
             </div>
@@ -290,12 +312,10 @@ export function UpdateProject() {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="isLocal"
                 checked={projectData.isLocal}
-                onChange={(e) => handleInputChange("isLocal", e.target.checked)}
-                className="rounded"
+                onCheckedChange={(checked) => handleInputChange("isLocal", checked)}
               />
               <Label htmlFor="isLocal">Enable Local Area Service</Label>
             </div>
@@ -340,7 +360,7 @@ export function UpdateProject() {
           <div className="space-y-6">
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <i className={`fas fa-${projectData.defaultFasFaIcon} mr-2 text-purple-600`} />
+                <Eye className="mr-2 text-purple-600" />
                 Project Preview
               </h3>
               
@@ -360,6 +380,30 @@ export function UpdateProject() {
                 <div className="col-span-2">
                   <Label className="text-sm font-medium text-gray-600">Call to Action</Label>
                   <p className="text-sm">{projectData.callToAction}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-gray-600">Description</Label>
+                  <p className="text-sm">{projectData.description}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Primary Color</Label>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded border"
+                      style={{ backgroundColor: projectData.primaryColor }}
+                    />
+                    <span className="text-sm">{projectData.primaryColor}</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Secondary Color</Label>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded border"
+                      style={{ backgroundColor: projectData.secondaryColor }}
+                    />
+                    <span className="text-sm">{projectData.secondaryColor}</span>
+                  </div>
                 </div>
               </div>
               
@@ -393,113 +437,125 @@ export function UpdateProject() {
   };
 
   return (
-    <div className="space-y-6 font-poppins">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate("/admin/project-list")}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Projects
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-purple-900">Update Project</h1>
-          <p className="text-sm text-purple-600">Edit your project settings and configuration</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-gray-950 dark:via-purple-950 dark:to-gray-900 flex font-poppins">
+      <AdminSidebar
+        activeSection="project-list"
+        setActiveSection={() => {}}
+      />
+      <main className="flex-1 overflow-auto">
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-800/20 min-h-[calc(100vh-4rem)]">
+            <div className="p-8">
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/admin/project-list")}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Projects
+                  </Button>
+                  <div>
+                    <h1 className="text-2xl font-bold text-purple-900">Update Project</h1>
+                    <p className="text-sm text-purple-600">Edit your project settings and configuration</p>
+                  </div>
+                </div>
 
-      {/* Progress Bar */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Progress</h3>
-            <span className="text-sm text-gray-600">
-              Step {currentStep + 1} of {steps.length}
-            </span>
+                {/* Progress Bar */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold">Progress</h3>
+                      <span className="text-sm text-gray-600">
+                        Step {currentStep + 1} of {steps.length}
+                      </span>
+                    </div>
+                    <Progress value={(currentStep + 1) / steps.length * 100} className="mb-4" />
+                    
+                    {/* Step Navigation */}
+                    <div className="flex flex-wrap gap-2">
+                      {steps.map((step, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentStep(index)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                            index === currentStep
+                              ? "bg-purple-600 text-white"
+                              : index < currentStep
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {step.title}
+                          {index < currentStep && <CheckCircle className="h-3 w-3" />}
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step Content */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      {steps[currentStep].title}
+                      <Edit3 className="h-4 w-4 text-gray-400" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {renderStepContent()}
+                  </CardContent>
+                </Card>
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                    disabled={currentStep === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <div className="flex gap-3">
+                    {currentStep === steps.length - 1 ? (
+                      <Button
+                        onClick={handleSave}
+                        disabled={isLoading}
+                        className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                        className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+                      >
+                        Next
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <Progress value={(currentStep + 1) / steps.length * 100} className="mb-4" />
-          
-          {/* Step Navigation */}
-          <div className="flex flex-wrap gap-2">
-            {steps.map((step, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentStep(index)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  index === currentStep
-                    ? "bg-purple-600 text-white"
-                    : index < currentStep
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <i className={`${step.icon} text-xs`} />
-                {step.title}
-                {index < currentStep && <CheckCircle className="h-3 w-3" />}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <i className={`${steps[currentStep].icon} text-purple-600`} />
-            {steps[currentStep].title}
-            <Edit3 className="h-4 w-4 text-gray-400" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          {renderStepContent()}
-        </CardContent>
-      </Card>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Previous
-        </Button>
-
-        <div className="flex gap-3">
-          {currentStep === steps.length - 1 ? (
-            <Button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
-            >
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
