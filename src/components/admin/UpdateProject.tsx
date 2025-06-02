@@ -21,7 +21,8 @@ interface ProjectDetails {
 }
 
 export function UpdateProject() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const params = useParams<{ projectId: string }>();
+  const projectId = params.projectId;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,11 +36,21 @@ export function UpdateProject() {
   });
 
   console.log("UpdateProject component mounted with projectId:", projectId);
+  console.log("Full params object:", params);
 
   // Fetch project details
   useEffect(() => {
     const fetchProjectDetails = async () => {
       console.log("Fetching project details for ID:", projectId);
+      
+      if (!projectId) {
+        console.error("No projectId provided in URL params");
+        toast.error("No project ID found in URL");
+        navigate("/admin/project-list");
+        setLoading(false);
+        return;
+      }
+
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -49,7 +60,11 @@ export function UpdateProject() {
           return;
         }
 
-        const res = await httpFile.get(`getProject/${projectId}`, {
+        // Use template literal to properly insert the projectId
+        const apiUrl = `getProject/${projectId}`;
+        console.log("Making API call to:", apiUrl);
+
+        const res = await httpFile.get(apiUrl, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -80,12 +95,7 @@ export function UpdateProject() {
       }
     };
 
-    if (projectId) {
-      fetchProjectDetails();
-    } else {
-      console.error("No projectId provided");
-      setLoading(false);
-    }
+    fetchProjectDetails();
   }, [projectId, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -101,10 +111,18 @@ export function UpdateProject() {
       return;
     }
 
+    if (!projectId) {
+      toast.error("No project ID available");
+      return;
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await httpFile.put(`updateProject/${projectId}`, formData, {
+      const apiUrl = `updateProject/${projectId}`;
+      console.log("Updating project with URL:", apiUrl);
+      
+      const res = await httpFile.put(apiUrl, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
