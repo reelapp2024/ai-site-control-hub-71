@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -128,7 +129,6 @@ export function ProjectList() {
   };
 
   const handleUpdateProject = (id) => {
-    console.log("Navigating to update project with ID:", id);
     navigate(`/admin/project/${id}/details`);
   };
 
@@ -255,7 +255,7 @@ export function ProjectList() {
                       Visit Services
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleUpdateProject(project._id)}>
-                      <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+                      <i className="fas fa-pen mr-2 h-4 w-4 text-blue-600" />
                       Update Project
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-red-600">

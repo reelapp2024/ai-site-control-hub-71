@@ -22,7 +22,6 @@ const App = () => (
           <Route path="/admin" element={<Index />} />
           <Route path="/admin/create-project" element={<Index initialSection="create-project" />} />
           <Route path="/admin/project-list" element={<Index initialSection="project-list" />} />
-          <Route path="/admin/project/:projectId/details" element={<Index initialSection="update-project" />} />
           <Route path="/services/:projectId" element={<Index initialSection="services" />} />
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Index />} />
