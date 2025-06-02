@@ -31,6 +31,7 @@ export function ProjectList() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
   const [projects, setProjects] = useState([]);
+  const [Activeprojects, setActiveProjects] = useState([]);
   const navigate = useNavigate();
 
   // Fetch projects from API with pagination and search
@@ -78,6 +79,7 @@ export function ProjectList() {
         }
 
         setProjects(res.data.data || []);
+        setActiveProjects(res.data.totalActiveProjects || []);
         setTotalPages(res.data.totalPages || 1);
         setTotalProjects(res.data.total || 0);
       } catch (err) {
@@ -102,7 +104,7 @@ export function ProjectList() {
 
   const getBadgeVariant = (status) => {
     switch (status) {
-      case 1:
+      case 2:
         return "bg-green-100 text-green-800 border-green-200";
       case 0:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -149,7 +151,7 @@ export function ProjectList() {
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -160,7 +162,11 @@ export function ProjectList() {
               onChange={handleSearchChange}
             />
           </div>
-          <Button className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white">
+          <Button className="h-10 px-4 bg-purple-600 hover:bg-purple-700 text-white"
+
+
+            onClick={() => navigate("/admin/create-project")}>
+
             <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
@@ -189,7 +195,7 @@ export function ProjectList() {
               <div>
                 <p className="text-xs font-medium text-green-600">Active Projects</p>
                 <p className="text-2xl font-bold text-green-900">
-                  {projects.filter((p) => p.status === 1).length}
+                  {Activeprojects}
                 </p>
               </div>
               <div className="p-2 bg-green-600 rounded-lg">
@@ -259,22 +265,22 @@ export function ProjectList() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Status</span>
                   <Badge className={`text-xs px-2 py-1 ${getBadgeVariant(project.status)}`}>
-                    {project.status === 1 ? "Active" : "Inactive"}
+                    {project.status === 2 ? "Active" : "Inactive"}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Created</span>
                   <span className="text-xs text-gray-700">
                     {new Date(project.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Images</span>
                   <Badge className="bg-purple-100 text-purple-700 text-xs px-2 py-1">
@@ -300,8 +306,8 @@ export function ProjectList() {
                 <p className="text-sm text-gray-500">Try adjusting your search terms or create a new project</p>
               </div>
               <Button className="bg-purple-600 hover:bg-purple-700 text-white"
-              
-               onClick={() => navigate("/admin/project-list")}>
+
+                onClick={() => navigate("/admin/create-project")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create New Project
               </Button>
@@ -316,12 +322,12 @@ export function ProjectList() {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
+                <PaginationPrevious
                   onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                   className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />
               </PaginationItem>
-              
+
               {currentPage > 1 && (
                 <PaginationItem>
                   <PaginationLink
@@ -332,7 +338,7 @@ export function ProjectList() {
                   </PaginationLink>
                 </PaginationItem>
               )}
-              
+
               <PaginationItem>
                 <PaginationLink
                   isActive={true}
@@ -342,7 +348,7 @@ export function ProjectList() {
                   {currentPage}
                 </PaginationLink>
               </PaginationItem>
-              
+
               {currentPage < totalPages && (
                 <PaginationItem>
                   <PaginationLink
@@ -353,9 +359,9 @@ export function ProjectList() {
                   </PaginationLink>
                 </PaginationItem>
               )}
-              
+
               <PaginationItem>
-                <PaginationNext 
+                <PaginationNext
                   onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
                   className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />

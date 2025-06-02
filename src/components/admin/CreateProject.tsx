@@ -905,10 +905,10 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
       }
     } else if (step === 2) {
       const hasCountriesChanged = JSON.stringify(selectedCountries) !== JSON.stringify(lastSavedCountries);
-      if (!hasCountriesChanged) {
-        setStep(step + 1);
-        return;
-      }
+      // if (!hasCountriesChanged) {
+      //   setStep(step + 1);
+      //   return;
+      // }
 
       const token = localStorage.getItem("token");
       const countriesPayload = selectedCountries.filter(item => item.countryId);
@@ -955,10 +955,10 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
       }
     } else if (step === 3) {
       const hasStatesChanged = JSON.stringify(selectedStates) !== JSON.stringify(lastSavedStates);
-      if (!hasStatesChanged) {
-        setStep(step + 1);
-        return;
-      }
+      // if (!hasStatesChanged) {
+      //   setStep(step + 1);
+      //   return;
+      // }
 
       const token = localStorage.getItem("token");
       const statesPayload: { countryId: string; stateId?: string; name: string; status: number }[] = [];
@@ -1018,10 +1018,10 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
       }
     } else if (step === 4) {
       const hasCitiesChanged = JSON.stringify(selectedCities) !== JSON.stringify(lastSavedCities);
-      if (!hasCitiesChanged) {
-        setStep(step + 1);
-        return;
-      }
+      // if (!hasCitiesChanged) {
+      //   setStep(step + 1);
+      //   return;
+      // }
 
       const token = localStorage.getItem("token");
       const citiesPayload: { stateId: string; cityId?: string; name: string; status: number }[] = [];
@@ -1089,10 +1089,10 @@ const fetchCitiesForState = async (stateId: string, stateName: string, search: s
       }
     } else if (step === 5) {
       const hasLocalAreasChanged = JSON.stringify(localAreas) !== JSON.stringify(lastSavedLocalAreas);
-      if (!hasLocalAreasChanged) {
-        setStep(step + 1);
-        return;
-      }
+      // if (!hasLocalAreasChanged) {
+      //   setStep(step + 1);
+      //   return;
+      // }
 
       const formattedData = Object.entries(localAreas).flatMap(([cityName, areas]) => {
         const stateName = Object.keys(selectedCities).find((state) =>

@@ -18,7 +18,7 @@ import { PostTagsManagement } from "@/components/admin/PostTagsManagement";
 import { PostEditor } from "@/components/admin/PostEditor";
 import { CreditManagement } from "@/components/admin/CreditManagement";
 import { HostingDashboard } from "@/components/admin/HostingDashboard";
-import { ServicesManagement } from "@/components/admin/ServicesManagement";
+import ServicesManagement from "@/components/admin/ServicesManagement";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 interface IndexProps {
@@ -53,7 +53,15 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
     } else if (location.pathname === "/admin/project-list") {
       setActiveSection("project-list");
       setIsEditingPost(false);
-    } else if (location.pathname.includes("/services/")) {
+    }
+
+    else if (location.pathname === "/admin/create-project") {
+      setActiveSection("create-project");
+      setIsEditingPost(false);
+    }
+
+
+    else if (location.pathname.includes("/services/")) {
       setActiveSection("services");
       setIsEditingPost(false);
     }
@@ -80,7 +88,7 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
     if (isEditingPost) {
       return <PostEditor postId={currentPostId} />;
     }
-    
+
     // Otherwise render the normal sections
     switch (activeSection) {
       case "dashboard":
@@ -126,9 +134,9 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-gray-950 dark:via-purple-950 dark:to-gray-900 flex font-poppins">
-      <AdminSidebar 
-        activeSection={activeSection} 
-        setActiveSection={handleSectionChange} 
+      <AdminSidebar
+        activeSection={activeSection}
+        setActiveSection={handleSectionChange}
       />
       <main className="flex-1 overflow-auto">
         <div className="p-8 max-w-7xl mx-auto">
