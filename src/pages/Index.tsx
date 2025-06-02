@@ -36,6 +36,9 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
 
   // Set active section based on URL path when component mounts or URL changes
   useEffect(() => {
+    console.log("Current location pathname:", location.pathname);
+    console.log("Current params:", params);
+    
     if (location.pathname === "/") {
       setActiveSection("dashboard");
       setIsEditingPost(false);
@@ -58,13 +61,14 @@ const Index: React.FC<IndexProps> = ({ initialSection = "dashboard" }) => {
       setActiveSection("create-project");
       setIsEditingPost(false);
     } else if (location.pathname.includes("/admin/project/") && location.pathname.includes("/details")) {
+      console.log("Setting active section to update-project");
       setActiveSection("update-project");
       setIsEditingPost(false);
     } else if (location.pathname.includes("/services/")) {
       setActiveSection("services");
       setIsEditingPost(false);
     }
-  }, [location.pathname]);
+  }, [location.pathname, params]);
 
   const handleSectionChange = (section: string) => {
     // Handle navigation for sections that have dedicated pages

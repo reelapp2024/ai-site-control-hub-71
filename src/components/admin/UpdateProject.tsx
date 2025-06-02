@@ -34,12 +34,16 @@ export function UpdateProject() {
     preferredColors: ''
   });
 
+  console.log("UpdateProject component mounted with projectId:", projectId);
+
   // Fetch project details
   useEffect(() => {
     const fetchProjectDetails = async () => {
+      console.log("Fetching project details for ID:", projectId);
       try {
         const token = localStorage.getItem("token");
         if (!token) {
+          console.error("No token found");
           toast.error("No authentication token found");
           navigate("/login");
           return;
@@ -49,8 +53,11 @@ export function UpdateProject() {
           headers: { Authorization: `Bearer ${token}` }
         });
 
+        console.log("API response:", res);
+
         if (res.status === 200 && res.data.data) {
           const projectData = res.data.data;
+          console.log("Project data received:", projectData);
           setProject(projectData);
           setFormData({
             projectName: projectData.projectName || '',
@@ -60,6 +67,7 @@ export function UpdateProject() {
             preferredColors: projectData.preferredColors || ''
           });
         } else {
+          console.error("Project not found or invalid response");
           toast.error("Project not found");
           navigate("/admin/project-list");
         }
@@ -74,6 +82,9 @@ export function UpdateProject() {
 
     if (projectId) {
       fetchProjectDetails();
+    } else {
+      console.error("No projectId provided");
+      setLoading(false);
     }
   }, [projectId, navigate]);
 
