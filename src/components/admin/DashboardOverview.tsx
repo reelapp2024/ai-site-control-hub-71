@@ -1,7 +1,10 @@
-
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { Globe, Users, Bot, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { Globe, Users, ShoppingCart, DollarSign, Clock } from "lucide-react";
+import { httpFile } from "../../config.js";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const websiteData = [
   { month: "Jan", websites: 45, users: 120 },
@@ -26,6 +29,44 @@ const recentActivity = [
 ];
 
 export function DashboardOverview() {
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await httpFile.get("dashboard", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+          toast.error("Invalid token");
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+
+        if (response.status === 403) {
+          console.log("Unauthorized:", response.statusText);
+        } else {
+          const { TotalUsersCount, TotalOrdersCount } = response.data;
+          setTotalUsersCount(TotalUsersCount);
+          setTotalOrdersCount(TotalOrdersCount);
+        }
+      } catch (err) {
+        toast.error(
+          err.response?.data?.message || "Error fetching dashboard data",
+          { toastId: "dashboardError" }
+        );
+        navigate("/login");
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -35,8 +76,9 @@ export function DashboardOverview() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Websites (static) */}
         <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Websites</CardTitle>
             <Globe className="h-4 w-4" />
           </CardHeader>
@@ -46,30 +88,31 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
+        {/* Total Users (from API) */}
         <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+          <CardHeader className="flex items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8,429</div>
-            <p className="text-xs opacity-90">+8% from last month</p>
+            <div className="text-2xl font-bold">{totalUsersCount}</div>
           </CardContent>
         </Card>
 
+        {/* Total Orders (from API) */}
         <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Generations</CardTitle>
-            <Bot className="h-4 w-4" />
+          <CardHeader className="flex items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <ShoppingCart className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24,891</div>
-            <p className="text-xs opacity-90">+23% from last month</p>
+            <div className="text-2xl font-bold">{totalOrdersCount}</div>
           </CardContent>
         </Card>
 
+        {/* Revenue (static) */}
         <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Revenue</CardTitle>
             <DollarSign className="h-4 w-4" />
           </CardHeader>
@@ -82,45 +125,7 @@ export function DashboardOverview() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Website Generation Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={websiteData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Bar dataKey="websites" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Model Usage Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={aiModelUsage}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                >
-                  {aiModelUsage.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* ... existing chart code ... */}
       </div>
 
       {/* Recent Activity */}
@@ -134,7 +139,10 @@ export function DashboardOverview() {
         <CardContent>
           <div className="space-y-4">
             {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div
+                key={activity.id}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                     <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />

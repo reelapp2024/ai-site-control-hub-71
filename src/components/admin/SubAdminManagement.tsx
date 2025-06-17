@@ -1,7 +1,14 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -13,14 +20,14 @@ type SubAdmin = {
   address: string;
   email: string;
   phone: string;
-  type: string;
+  type: number; // 0 = SubAdmin, 1 = Admin
 };
 
 export function SubAdminManagement() {
   const [view, setView] = useState<"list" | "add">("list");
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(0); // 0-based for frontend
+  const [page, setPage] = useState(0); // 0-based index
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalSubAdmins, setTotalSubAdmins] = useState(0);
@@ -39,11 +46,14 @@ export function SubAdminManagement() {
   const fetchSubAdmins = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await httpFile.get(`/fetch_users?page=${page + 1}&limit=${rowsPerPage}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await httpFile.get(
+        `/fetch_users?page=${page + 1}&limit=${rowsPerPage}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.status === 401) {
         toast({
@@ -56,20 +66,21 @@ export function SubAdminManagement() {
         return;
       }
 
+      const items = response.data.data || [];
       setSubAdmins(
-        (response.data.data || []).map((item: any, idx: number) => ({
+        items.map((item: any, idx: number) => ({
           id: item.id || item._id || idx + 1,
           fullName: item.fullName,
           address: item.address || "",
           email: item.email,
           phone: item.phone,
-          type: item.type?.toString() || "0",
+          type: Number(item.type) || 0, // store numeric type
         }))
       );
       setTotalPages(response.data.pagination?.totalPages || 1);
       setTotalSubAdmins(response.data.pagination?.totalUsers || 0);
     } catch (error: any) {
-      if (error.response && error.response.status === 401) {
+      if (error.response?.status === 401) {
         toast({
           title: "Error",
           description: "Token is not valid",
@@ -92,7 +103,7 @@ export function SubAdminManagement() {
     // eslint-disable-next-line
   }, [page, rowsPerPage]);
 
-  // Add SubAdmin local handler (does not call backend - you can update it if you have an API for adding)
+  // Handle form field changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -101,11 +112,18 @@ export function SubAdminManagement() {
     }));
   };
 
+  // Submit new sub-admin to API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simple validation
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.password || !formData.address) {
+    // Validation
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.password ||
+      !formData.address
+    ) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -114,25 +132,26 @@ export function SubAdminManagement() {
       return;
     }
 
-
-
-
-
-
     try {
-      // const res = await httpFile.post("create_user", formData);
       const token = localStorage.getItem("token");
-
-      const res = await httpFile.post('/create_user', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await httpFile.post(
+        "/create_user",
+        {
+          ...formData,
+          // ensure new user is created as SubAdmin (type 0)
+          type: 0,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (res.status === 401) {
         toast({
           title: "Error",
-          description: "Invalid Token",
+          description: "Invalid token",
           variant: "destructive",
         });
         localStorage.removeItem("token");
@@ -140,64 +159,31 @@ export function SubAdminManagement() {
         return;
       }
 
-      console.log(res, "res from backend");
-
       if (res.status === 201) {
         toast({
           title: "Success",
-          description: "Sub Admin created successfully!",
+          description: "SubAdmin created successfully!",
         });
-
-
-         setView("list");
-  // REFRESH the list
-  fetchSubAdmins();
-        // navigate("/admin/SubAdmin_listing");
+        setView("list");
+        fetchSubAdmins();
       }
-    } catch (err) {
-      const error = err.response?.data?.message || "An error occurred!";
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "An error occurred!";
       toast({
         title: "Error",
-        description: err,
+        description: msg,
         variant: "destructive",
       });
-
-
     }
-
-    // (Optional: Call backend API to add SubAdmin here)
-    // For now, add locally:
-    const newSubAdmin: SubAdmin = {
-      id: Date.now(),
-      fullName: formData.fullName,
-      address: formData.address,
-      email: formData.email,
-      phone: formData.phone,
-      type: "0",
-    };
-
-    setSubAdmins([...subAdmins, newSubAdmin]);
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      password: "",
-      address: "",
-    });
-    toast({
-      title: "Success",
-      description: "Sub Admin created successfully!",
-    });
-    setView("list");
   };
 
-  // Client-side search
+  // Filter for search
   const filteredSubAdmins = subAdmins.filter(
-    (subAdmin) =>
-      subAdmin.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subAdmin.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subAdmin.phone?.includes(searchTerm) ||
-      subAdmin.address?.includes(searchTerm)
+    (sa) =>
+      sa.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sa.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sa.phone.includes(searchTerm) ||
+      sa.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (view === "add") {
@@ -205,10 +191,7 @@ export function SubAdminManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Add SubAdmin</h1>
-          <Button
-            variant="outline"
-            onClick={() => setView("list")}
-          >
+          <Button variant="outline" onClick={() => setView("list")}>
             Back to List
           </Button>
         </div>
@@ -216,14 +199,22 @@ export function SubAdminManagement() {
         <nav className="flex mb-6" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
             <li className="inline-flex items-center">
-              <a href="#" onClick={() => setView("list")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+              <a
+                href="#"
+                onClick={() => setView("list")}
+                className="text-sm font-medium text-gray-700 hover:text-blue-600"
+              >
                 Home
               </a>
             </li>
             <li>
               <div className="flex items-center">
                 <span className="mx-2 text-gray-400">/</span>
-                <a href="#" onClick={() => setView("list")} className="text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                <a
+                  href="#"
+                  onClick={() => setView("list")}
+                  className="text-sm font-medium text-gray-700 hover:text-blue-600"
+                >
                   Manage SubAdmin
                 </a>
               </div>
@@ -231,7 +222,7 @@ export function SubAdminManagement() {
             <li aria-current="page">
               <div className="flex items-center">
                 <span className="mx-2 text-gray-400">/</span>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-medium text-gray-500">
                   Add SubAdmin
                 </span>
               </div>
@@ -239,11 +230,11 @@ export function SubAdminManagement() {
           </ol>
         </nav>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-6">Add SubAdmin</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div>
                 <label htmlFor="fullName" className="block text-sm font-medium">
                   Full Name
                 </label>
@@ -255,7 +246,7 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium">
                   E-Mail
                 </label>
@@ -268,7 +259,7 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <label htmlFor="phone" className="block text-sm font-medium">
                   Phone
                 </label>
@@ -280,7 +271,7 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <label htmlFor="password" className="block text-sm font-medium">
                   Password
                 </label>
@@ -293,7 +284,7 @@ export function SubAdminManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="md:col-span-2">
                 <label htmlFor="address" className="block text-sm font-medium">
                   Address
                 </label>
@@ -315,9 +306,7 @@ export function SubAdminManagement() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                Submit
-              </Button>
+              <Button type="submit">Submit</Button>
             </div>
           </form>
         </div>
@@ -329,14 +318,10 @@ export function SubAdminManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage SubAdmin</h1>
-        <Button
-          onClick={() => setView("add")}
-        >
-          Add SubAdmin
-        </Button>
+        <Button onClick={() => setView("add")}>Add SubAdmin</Button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+      <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">SubAdmin Listing</h2>
           <div className="relative">
@@ -371,7 +356,9 @@ export function SubAdminManagement() {
                     <TableCell>{subAdmin.address}</TableCell>
                     <TableCell>{subAdmin.email}</TableCell>
                     <TableCell>{subAdmin.phone}</TableCell>
-                    <TableCell>{subAdmin.type}</TableCell>
+                    <TableCell>
+                      {subAdmin.type === 1 ? "Admin" : "SubAdmin"}
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -384,12 +371,11 @@ export function SubAdminManagement() {
             </TableBody>
           </Table>
         </div>
+
         {/* Pagination Controls */}
         <div className="flex justify-between items-center my-4">
           <div>
-            Page {page + 1} of {totalPages}
-            {" | "}
-            Total: {totalSubAdmins}
+            Page {page + 1} of {totalPages} | Total: {totalSubAdmins}
           </div>
           <div>
             <Button
