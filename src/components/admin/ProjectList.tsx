@@ -119,7 +119,7 @@ export function ProjectList() {
   };
 
   const handleVisitLiveSite = (id) => {
-    window.open(`https://aiwebsite.todaystrends.site/?siteId=${id}`, "_blank");
+    window.open(`https://aisite.todaystrends.site//?siteId=${id}`, "_blank");
   };
 
   const handleVisitServices = (id) => {
