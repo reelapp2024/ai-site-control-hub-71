@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PostEditor } from "./components/admin/PostEditor";
+import { UpdateProject } from "./components/admin/UpdateProject";
 import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/admin" element={<Index />} />
           <Route path="/admin/create-project" element={<Index initialSection="create-project" />} />
           <Route path="/admin/project-list" element={<Index initialSection="project-list" />} />
+          <Route path="/admin/project/:projectId/details" element={<UpdateProject />} />
           <Route path="/services/:projectId" element={<Index initialSection="services" />} />
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Index />} />
