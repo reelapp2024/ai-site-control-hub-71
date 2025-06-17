@@ -43,24 +43,24 @@ const getBaseSidebarItems = () => [
       { id: "project-list", label: "Project List", icon: ListTodo },
     ],
   },
-  { id: "hosting", label: "Hosting", icon: Server },
-  {
-    id: "domains",
-    label: "Domains",
-    icon: Link,
-    submenu: [{ id: "domain-management", label: "Domain Management", icon: Link }],
-  },
-  { id: "users", label: "Users", icon: Users },
+  // { id: "hosting", label: "Hosting", icon: Server },
+  // {
+  //   id: "domains",
+  //   label: "Domains",
+  //   icon: Link,
+  //   submenu: [{ id: "domain-management", label: "Domain Management", icon: Link }],
+  // },
+  // { id: "users", label: "Users", icon: Users },
   {
     id: "subadmin",
     label: "Sub Admin",
     icon: UserCog,
-    submenu: [{ id: "manage-subadmin", label: "Manage Sub Admin", icon: UserCog }],
+    submenu: [{ id: "manage-subadmin", label: "Manage", icon: UserCog }],
   },
-  { id: "themes", label: "Themes", icon: Palette },
-  { id: "plugins", label: "Plugins", icon: Plug },
-  { id: "credits", label: "Credits", icon: Coins },
-  { id: "settings", label: "Settings", icon: Settings },
+  // { id: "themes", label: "Themes", icon: Palette },
+  // { id: "plugins", label: "Plugins", icon: Plug },
+  // { id: "credits", label: "Credits", icon: Coins },
+  // { id: "settings", label: "Settings", icon: Settings },
 ];
 
 const getContentManagementItems = () => [
