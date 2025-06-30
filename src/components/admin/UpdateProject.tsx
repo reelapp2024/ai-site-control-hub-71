@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Edit3, Save, Eye, CheckCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Edit3, Save, Eye, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +16,7 @@ export function UpdateProject() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBulkCreating, setIsBulkCreating] = useState(false);
 
   // Mock data - replace with actual API call based on projectId
   const [projectData, setProjectData] = useState({
@@ -27,7 +27,11 @@ export function UpdateProject() {
     primaryColor: "#7c3aed",
     secondaryColor: "#a855f7",
     description: "Professional house cleaning services for your home",
-    selectedCountries: [{ name: "United States", id: "US" }],
+    selectedCountries: [
+      { name: "United States", id: "US", hasPage: true },
+      { name: "Canada", id: "CA", hasPage: false },
+      { name: "United Kingdom", id: "UK", hasPage: false }
+    ],
     selectedStates: [{ name: "California", id: "CA" }],
     selectedCities: [{ name: "Los Angeles", id: "LA" }],
     selectedLocalAreas: [{ name: "Downtown", id: "DT" }, { name: "Hollywood", id: "HW" }],
@@ -36,6 +40,21 @@ export function UpdateProject() {
     isCity: false,
     isLocal: true
   });
+
+  // Available countries for selection
+  const availableCountries = [
+    { name: "United States", id: "US" },
+    { name: "Canada", id: "CA" },
+    { name: "United Kingdom", id: "UK" },
+    { name: "Germany", id: "DE" },
+    { name: "France", id: "FR" },
+    { name: "Australia", id: "AU" },
+    { name: "Japan", id: "JP" },
+    { name: "India", id: "IN" }
+  ];
+
+  // Bulk selection states
+  const [selectedCountriesForBulk, setSelectedCountriesForBulk] = useState<string[]>([]);
 
   const steps = [
     { title: "Project Information", icon: "info" },
@@ -62,6 +81,65 @@ export function UpdateProject() {
       navigate("/admin/project-list");
     }, 1000);
   };
+
+  const handleAddCountry = (country: { name: string; id: string }) => {
+    if (!projectData.selectedCountries.find(c => c.id === country.id)) {
+      handleInputChange("selectedCountries", [
+        ...projectData.selectedCountries, 
+        { ...country, hasPage: false }
+      ]);
+    }
+  };
+
+  const handleRemoveCountry = (countryId: string) => {
+    const updated = projectData.selectedCountries.filter(c => c.id !== countryId);
+    handleInputChange("selectedCountries", updated);
+    setSelectedCountriesForBulk(prev => prev.filter(id => id !== countryId));
+  };
+
+  const handleCreatePageForCountry = (countryId: string) => {
+    const updated = projectData.selectedCountries.map(country => 
+      country.id === countryId ? { ...country, hasPage: true } : country
+    );
+    handleInputChange("selectedCountries", updated);
+  };
+
+  const handleBulkCountrySelection = (countryId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCountriesForBulk(prev => [...prev, countryId]);
+    } else {
+      setSelectedCountriesForBulk(prev => prev.filter(id => id !== countryId));
+    }
+  };
+
+  const handleSelectAllCountries = () => {
+    const countriesWithoutPages = projectData.selectedCountries
+      .filter(country => !country.hasPage)
+      .map(country => country.id);
+    setSelectedCountriesForBulk(countriesWithoutPages);
+  };
+
+  const handleDeselectAllCountries = () => {
+    setSelectedCountriesForBulk([]);
+  };
+
+  const handleBulkCreatePages = async () => {
+    setIsBulkCreating(true);
+    
+    // Simulate API call for bulk creation
+    setTimeout(() => {
+      const updated = projectData.selectedCountries.map(country => 
+        selectedCountriesForBulk.includes(country.id) 
+          ? { ...country, hasPage: true } 
+          : country
+      );
+      handleInputChange("selectedCountries", updated);
+      setSelectedCountriesForBulk([]);
+      setIsBulkCreating(false);
+    }, 2000);
+  };
+
+  const countriesWithoutPages = projectData.selectedCountries.filter(country => !country.hasPage);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -178,38 +256,134 @@ export function UpdateProject() {
               <Label htmlFor="isCountry">Enable Country Level Service</Label>
             </div>
             
-            <div>
-              <Label>Selected Countries</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {projectData.selectedCountries.map((country) => (
-                  <Badge key={country.id} variant="secondary" className="px-3 py-1">
+            {/* Add Country Section */}
+            <div className="space-y-4">
+              <Label>Add Countries</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {availableCountries.map((country) => (
+                  <Button
+                    key={country.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddCountry(country)}
+                    disabled={projectData.selectedCountries.find(c => c.id === country.id)}
+                    className="text-left justify-start"
+                  >
+                    <Plus className="h-3 w-3 mr-2" />
                     {country.name}
-                    <button
-                      onClick={() => {
-                        const updated = projectData.selectedCountries.filter(c => c.id !== country.id);
-                        handleInputChange("selectedCountries", updated);
-                      }}
-                      className="ml-2 text-red-500 hover:text-red-700"
-                    >
-                      ×
-                    </button>
-                  </Badge>
+                  </Button>
                 ))}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-3"
-                onClick={() => {
-                  // Mock adding a country
-                  const newCountry = { name: "Canada", id: "CA" };
-                  if (!projectData.selectedCountries.find(c => c.id === newCountry.id)) {
-                    handleInputChange("selectedCountries", [...projectData.selectedCountries, newCountry]);
-                  }
-                }}
-              >
-                Add Country
-              </Button>
+            </div>
+
+            {/* Selected Countries */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Selected Countries ({projectData.selectedCountries.length})</Label>
+                {countriesWithoutPages.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSelectAllCountries}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeselectAllCountries}
+                    >
+                      Deselect All
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {projectData.selectedCountries.length > 0 && (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {projectData.selectedCountries.map((country) => (
+                    <div
+                      key={country.id}
+                      className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        {!country.hasPage && (
+                          <Checkbox
+                            checked={selectedCountriesForBulk.includes(country.id)}
+                            onCheckedChange={(checked) => 
+                              handleBulkCountrySelection(country.id, checked as boolean)
+                            }
+                          />
+                        )}
+                        <div>
+                          <span className="font-medium">{country.name}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge 
+                              variant={country.hasPage ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {country.hasPage ? "Page Created" : "No Page"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        {!country.hasPage && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleCreatePageForCountry(country.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            Create Page
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveCountry(country.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bulk Actions */}
+              {selectedCountriesForBulk.length > 0 && (
+                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <span className="text-sm font-medium text-purple-700">
+                    {selectedCountriesForBulk.length} countries selected
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={handleBulkCreatePages}
+                    disabled={isBulkCreating}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    {isBulkCreating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating Pages...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Pages for Selected ({selectedCountriesForBulk.length})
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         );
